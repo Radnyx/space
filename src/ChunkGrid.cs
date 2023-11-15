@@ -1,6 +1,6 @@
 namespace Space
 {
-    public class ChunkGrid<T> where T : notnull
+    public class ChunkGrid
     {
         private Chunk[,] chunks;
 
@@ -8,7 +8,7 @@ namespace Space
         {
             if (tileMap.GetWidth() % chunkSizeX != 0 || tileMap.GetHeight() % chunkSizeY != 0)
             {
-                throw new System.InvalidOperationException("Tile map size is not divisible by given chunk size.");
+                throw new InvalidOperationException("Tile map size is not divisible by given chunk size.");
             }
 
             var xChunks = tileMap.GetWidth() / chunkSizeX;
@@ -20,9 +20,14 @@ namespace Space
                 for (var y = 0; y < yChunks; y++)
                 {
                     chunks[x, y] = new Chunk(x * chunkSizeX, y * chunkSizeY, chunkSizeX, chunkSizeY);
-                    chunks[x, y].Init(tileMap);
                 }
             }
+        }
+
+        /// <returns>The room at the given tile coordinates.</returns>
+        public Room GetRoomAt(int x, int y)
+        {
+            return new Room();
         }
     }
 }

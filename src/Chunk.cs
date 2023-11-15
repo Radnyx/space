@@ -7,18 +7,16 @@ namespace Space
 
         private Region?[,] regionTiles;
 
-        public Chunk(int x, int y, int width, int height)
+        public Chunk(int topLeftX, int topLeftY, int width, int height)
         {
-            topLeftX = x;
-            topLeftY = y;
+            this.topLeftX = topLeftX;
+            this.topLeftY = topLeftY;
             this.width = width;
             this.height = height;
             regionTiles = new Region?[width, height];
-        }
 
-        public void Init(ITileMap tileMap)
-        {
             Room room = new();
+
             for (var x = 0; x < width; x++)
             {
                 for (var y = 0; y < height; y++)
