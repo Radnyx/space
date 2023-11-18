@@ -63,43 +63,59 @@ namespace SpaceTest
             "1#111111" +
             "11111111";
 
+        private const string mockRooms2 =
+            "11#22222" +
+            "11#22222" +
+            "11#22222" +
+            "11#22222" +
+            "111##222" +
+            "11#33###" +
+            "1#333333" +
+            "#3333333";
+
+        private const string mockRooms3 =
+            "11#44#22" +
+            "11###222" +
+            "11#22222" +
+            "11#22222" +
+            "111##222" +
+            "11#33###" +
+            "1#3333#5" +
+            "#33333#5";
+
         [Fact]
         public void CreatesTwoRooms()
         {
             var mockTileMap = new MockTileMap();
             mockTileMap.OnReady();
 
-            HashSet<Room?> room1 = new();
-            HashSet<Room?> room2 = new();
+            ValidateMap(mockTileMap, mockRooms, new int[2] { 30, 23 });
+        }
 
-            for (var x = 0; x < 8; x++)
-            {
-                for (var y = 0; y < 8; y++)
-                {
-                    var c = mockRooms[y * 8 + x];
-                    var room = mockTileMap.grid.GetRoomAt(x, y);
-                    if (c == '1')
-                    {
-                        room1.Add(room);
-                    }
-                    else if (c == '2')
-                    {
-                        room2.Add(room);
-                    }
-                    else
-                    {
-                        Assert.Null(room);
-                    }
-                }
-            }
+        [Fact]
+        public void CreatesLinks()
+        {
+            var mockTileMap = new MockTileMap();
+            mockTileMap.OnReady();
+            var chunks = mockTileMap.grid.chunks;
+            var links = mockTileMap.grid.linkCache;
+            Assert.Equal(4, links.Count);
 
-            Assert.Single(room1);
-            Assert.Single(room2);
-            Assert.NotEqual(room1.First(), room2.First());
-            Assert.NotNull(room1.First());
-            Assert.NotNull(room2.First());
-            Assert.Equal(30, room1.First()!.size);
-            Assert.Equal(23, room2.First()!.size);
+            var link1 = links[0b1_000100_000000000000_000000000011u];
+            var link2 = links[0b0_000010_000000000011_000000000000u];
+            var link3 = links[0b0_000011_000000000011_000000000101u];
+            var link4 = links[0b1_000011_000000000101_000000000011u];
+            Assert.Equal(chunks[0, 0].regions[1], link1.r1);
+            Assert.Equal(chunks[1, 0].regions[0], link1.r2);
+
+            Assert.Equal(chunks[0, 0].regions[0], link2.r1);
+            Assert.Equal(chunks[0, 1].regions[0], link2.r2);
+
+            Assert.Equal(chunks[1, 0].regions[0], link3.r1);
+            Assert.Equal(chunks[1, 1].regions[1], link3.r2);
+
+            Assert.Equal(chunks[0, 1].regions[0], link4.r1);
+            Assert.Equal(chunks[1, 1].regions[0], link4.r2);
         }
 
         [Fact]
@@ -108,6 +124,97 @@ namespace SpaceTest
             var mockTileMap = new MockTileMap();
             mockTileMap.OnReady();
             mockTileMap.SetTile(0, 7, '#');
+
+            var chunks = mockTileMap.grid.chunks;
+            Assert.Equal(2, chunks[0, 1].regions.Count);
+
+            var links = mockTileMap.grid.linkCache;
+            Assert.Equal(4, links.Count);
+
+            var link1 = links[0b1_000100_000000000000_000000000011u];
+            var link2 = links[0b0_000010_000000000011_000000000000u];
+            var link3 = links[0b0_000011_000000000011_000000000101u];
+            var link4 = links[0b1_000011_000000000101_000000000011u];
+            Assert.Equal(chunks[0, 0].regions[1], link1.r1);
+            Assert.Equal(chunks[1, 0].regions[0], link1.r2);
+
+            Assert.Equal(chunks[0, 0].regions[0], link2.r1);
+            Assert.Equal(chunks[0, 1].regions[0], link2.r2);
+
+            Assert.Equal(chunks[1, 0].regions[0], link3.r1);
+            Assert.Equal(chunks[1, 1].regions[1], link3.r2);
+
+            Assert.Equal(chunks[0, 1].regions[1], link4.r1);
+            Assert.Equal(chunks[1, 1].regions[0], link4.r2);
+
+            Assert.Equal(6, chunks[0, 1].regions[0].size);
+            Assert.Equal(6, chunks[0, 1].regions[1].size);
+            Assert.Equal(chunks[1, 1].regions[0].room, chunks[0, 1].regions[1].room);
+
+            ValidateMap(mockTileMap, mockRooms2, new int[3] { 14, 23, 15 });
+        }
+
+        [Fact]
+        public void AddingMultipleTilesInARow()
+        {
+            var mockTileMap = new MockTileMap();
+            mockTileMap.OnReady();
+            mockTileMap.SetTile(0, 7, '#');
+            mockTileMap.SetTile(6, 7, '#');
+            mockTileMap.SetTile(3, 1, '#');
+            mockTileMap.SetTile(6, 6, '#');
+            mockTileMap.SetTile(5, 0, '#');
+            mockTileMap.SetTile(4, 1, '#');
+
+            var chunks = mockTileMap.grid.chunks;
+            Assert.Equal(3, chunks[0, 0].regions.Count);
+            Assert.Equal(2, chunks[1, 0].regions.Count);
+            Assert.Equal(3, chunks[1, 1].regions.Count);
+
+            var links = mockTileMap.grid.linkCache;
+            Assert.Equal(5, links.Count);
+
+            ValidateMap(mockTileMap, mockRooms3, new int[5] { 14, 18, 11, 2, 2 });
+        }
+
+        private void ValidateMap(MockTileMap map, string expectedRooms, int[] sizes)
+        {
+            HashSet<Room?>[] rooms = new HashSet<Room?>[sizes.Length];
+            for (var i = 0; i < rooms.Length; i++)
+            {
+                rooms[i] = new();
+            }
+
+            for (var x = 0; x < map.GetWidth(); x++)
+            {
+                for (var y = 0; y < map.GetHeight(); y++)
+                {
+                    var c = expectedRooms[y * map.GetWidth() + x];
+                    var room = map.grid.GetRoomAt(x, y);
+
+                    if (c == '#')
+                    {
+                        Assert.Null(room);
+                    }
+                    else
+                    {
+                        rooms[c - '1'].Add(room);
+                    }
+                }
+            }
+
+            for (var i = 0; i < rooms.Length; i++)
+            {
+                var room = rooms[i];
+                Assert.Single(room);
+                Assert.NotNull(room.First());
+                Assert.Equal(sizes[i], room.First()!.size);
+
+                if (i < rooms.Length - 1)
+                {
+                    Assert.NotEqual(room.First(), rooms[i + 1].First());
+                }
+            }
         }
     }
 }

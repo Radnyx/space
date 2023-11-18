@@ -12,17 +12,29 @@ namespace SpaceTest
             private string map;
             public string expectedRegions;
 
+            private int width, height;
+
             public MockTileMap(string map, string expectedRegions)
             {
                 this.map = map;
                 this.expectedRegions = expectedRegions;
+                this.width = 4;
+                this.height = 4;
             }
 
-            public int GetHeight() => 4;
+            public MockTileMap(string map, int width, int height)
+            {
+                this.map = map;
+                this.width = width;
+                this.height = height;
+                expectedRegions = "";
+            }
 
-            public int GetWidth() => 4;
+            public int GetHeight() => width;
 
-            public bool IsNavigable(int x, int y) => map[y * 4 + x] != '#';
+            public int GetWidth() => height;
+
+            public bool IsNavigable(int x, int y) => map[y * width + x] != '#';
         }
 
         private MockTileMap map1 = new(
@@ -91,6 +103,40 @@ namespace SpaceTest
            "####"
        );
 
+        private MockTileMap mapLinkRight = new(
+            "........" +
+            "...#...." +
+            "........" +
+            "........" +
+            "....####" +
+            "...##..." +
+            "........" +
+            "####...." +
+            "........" +
+            "........",
+            8, 10
+         );
+
+        private MockTileMap mapLinkDown = new(
+            ".........." +
+            "...#..#..#" +
+            "..#...#..." +
+            "..........",
+            10, 4
+        );
+
+        private MockTileMap mapLinkDown2 = new(
+            "..#....." +
+            "..#....." +
+            "..#....." +
+            "..#....." +
+            "...##..." +
+            "..#..###" +
+            ".#......" +
+            "#.......",
+            8, 8
+        );
+
         [Fact]
         public void ChunkCalculatesInitialRegions1()
         {
@@ -127,9 +173,84 @@ namespace SpaceTest
             ValidateMap(map6, new int[0] { });
         }
 
+        [Fact]
+        public void CreatesLinksRight()
+        {
+            Dictionary<System.UInt32, LinkPair> linkCache = new();
+            Chunk chunk1 = new(mapLinkRight, linkCache, 0, 0, 4, 10);
+            Chunk chunk2 = new(mapLinkRight, linkCache, 4, 0, 4, 10);
+            chunk1.RecalculateLinksRight(chunk2);
+
+            Assert.Equal(4, linkCache.Count);
+
+            var link1 = linkCache[0b1000001000000000000000000000011u];
+            var link2 = linkCache[0b1000010000000000010000000000011u];
+            var link3 = linkCache[0b1000001000000000110000000000011u];
+            var link4 = linkCache[0b1000010000000001000000000000011u];
+
+            Assert.Equal(link1.r1, chunk1.regions[0]);
+            Assert.Equal(link1.r2, chunk2.regions[0]);
+
+            Assert.Equal(link2.r1, chunk1.regions[0]);
+            Assert.Equal(link2.r2, chunk2.regions[0]);
+
+            Assert.Equal(link3.r1, chunk1.regions[0]);
+            Assert.Equal(link3.r2, chunk2.regions[1]);
+
+            Assert.Equal(link4.r1, chunk1.regions[1]);
+            Assert.Equal(link4.r2, chunk2.regions[1]);
+        }
+
+        [Fact]
+        public void CreatesLinksDown()
+        {
+            Dictionary<System.UInt32, LinkPair> linkCache = new();
+            Chunk chunk1 = new(mapLinkDown, linkCache, 0, 0, 5, 2);
+            Chunk chunk2 = new(mapLinkDown, linkCache, 5, 0, 5, 2);
+            Chunk chunk3 = new(mapLinkDown, linkCache, 0, 2, 5, 2);
+            Chunk chunk4 = new(mapLinkDown, linkCache, 5, 2, 5, 2);
+            chunk1.RecalculateLinksDown(chunk3);
+            chunk2.RecalculateLinksDown(chunk4);
+
+            Assert.Equal(4, linkCache.Count);
+
+            var link1 = linkCache[0b0000010000000000001000000000000u];
+            var link2 = linkCache[0b0000001000000000001000000000100u];
+            var link3 = linkCache[0b0000001000000000001000000000101u];
+            var link4 = linkCache[0b0000010000000000001000000000111u];
+
+            Assert.Equal(link1.r1, chunk1.regions[0]);
+            Assert.Equal(link1.r2, chunk3.regions[0]);
+
+            Assert.Equal(link2.r1, chunk1.regions[0]);
+            Assert.Equal(link2.r2, chunk3.regions[0]);
+
+            Assert.Equal(link3.r1, chunk2.regions[0]);
+            Assert.Equal(link3.r2, chunk4.regions[0]);
+
+            Assert.Equal(link4.r1, chunk2.regions[0]);
+            Assert.Equal(link4.r2, chunk4.regions[0]);
+        }
+
+        [Fact]
+        public void CreatesLinksDown2()
+        {
+            Dictionary<System.UInt32, LinkPair> linkCache = new();
+            Chunk chunk1 = new(mapLinkDown2, linkCache, 0, 0, 4, 4);
+            Chunk chunk2 = new(mapLinkDown2, linkCache, 0, 4, 4, 4);
+            chunk1.RecalculateLinksDown(chunk2);
+
+            Assert.Single(linkCache);
+
+            var link1 = linkCache[0b0000010000000000011000000000000u];
+
+            Assert.Equal(link1.r1, chunk1.regions[0]);
+            Assert.Equal(link1.r2, chunk2.regions[0]);
+        }
+
         private void ValidateMap(MockTileMap map, int[] sizes)
         {
-            Chunk chunk = new(map, 0, 0, 4, 4);
+            Chunk chunk = new(map, new(), 0, 0, 4, 4);
 
             HashSet<Room?>[] rooms = new HashSet<Room?>[sizes.Length];
             for (var i = 0; i < rooms.Length; i++)
