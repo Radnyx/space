@@ -271,12 +271,13 @@ namespace Space
             }
         }
 
-        public void CreateNewRegion(int x, int y)
+        public Region CreateNewRegion(int x, int y)
         {
             var region = new Region();
             regions.Add(region);
             region.IncrementSize();
             regionTiles[x, y] = region;
+            return region;
         }
 
         public HashSet<Region> GetRegionsAdjacentTo(int x, int y)

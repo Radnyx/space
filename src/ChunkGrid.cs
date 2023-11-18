@@ -92,10 +92,17 @@ namespace Space
             // 1. Get the regions in the 4 adjacent tiles (inside the chunk).
             var regions = chunk.GetRegionsAdjacentTo(chunkTileX, chunkTileY);
 
-            // 2a. No neighbors. New region, new room.
+            // 2a. No neighbors. New region, new room, connect if necessary.
             if (regions.Count == 0)
             {
-                chunk.CreateNewRegion(chunkTileX, chunkTileY);
+                var region = chunk.CreateNewRegion(chunkTileX, chunkTileY);
+
+                if (IsChunkTileOnEdge(chunkTileX, chunkTileY))
+                {
+                    RecalculateLinksForChunk(x / chunkSizeX, y / chunkSizeX);
+                    MergeRoomsBreadthFirst(region);
+                }
+
                 return;
             }
 

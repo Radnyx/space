@@ -27,34 +27,113 @@ namespace SpaceTest
             ".#....#." +
             "#.....#.";
 
+        private const string MAP_STRING_COMPLICATED =
+            "###...###" +
+            "###...###" +
+            "###...###" +
+            "...###..." +
+            "...###..." +
+            "...###...";
+
+
+        private const string MOCK_ROOMS =
+            "11#22222" +
+            "11#22222" +
+            "11#22222" +
+            "11#22222" +
+            "111##222" +
+            "11#11###" +
+            "1#111111" +
+            "11111111";
+
+        private const string MOCK_ROOMS_2 =
+            "11#22222" +
+            "11#22222" +
+            "11#22222" +
+            "11#22222" +
+            "111##222" +
+            "11#33###" +
+            "1#333333" +
+            "#3333333";
+
+        private const string MOCK_ROOMS_3 =
+            "11#44#22" +
+            "11###222" +
+            "11#22222" +
+            "11#22222" +
+            "111##222" +
+            "11#33###" +
+            "1#3333#5" +
+            "#33333#5";
+
+        private const string MOCK_ROOMS_COMPLICATED_1 =
+            "###111###" +
+            "#2#111###" +
+            "###111###" +
+            "1111#1111" +
+            "111###111" +
+            "111###111";
+
+        private const string MOCK_ROOMS_COMPLICATED_2 =
+            "###111###" +
+            "###111###" +
+            "###1#11##" +
+            "22#1#1111" +
+            "222###111" +
+            "222###111";
+
+        private const string MOCK_ROOMS_COMPLICATED_3 =
+            "###111###" +
+            "###11####" +
+            "#111#22##" +
+            "11#1#2222" +
+            "111###222" +
+            "111###222";
+
         private class MockTileMap : ITileMap
         {
-            private readonly string mapString;
 
             public readonly List<char> map;
 
             public ChunkGrid grid = null!;
 
+            private readonly string mapString;
+            private int w, h, cw, ch;
+
             public MockTileMap(string mapString = MAP_STRING_1)
             {
                 this.mapString = mapString;
+                this.w = 8;
+                this.h = 8;
+                this.cw = 4;
+                this.ch = 4;
+                map = mapString.ToList();
+            }
+
+            public MockTileMap(string mapString, int w, int h, int cw, int ch)
+            {
+                this.mapString = mapString;
+                this.w = w;
+                this.h = h;
+                this.cw = cw;
+                this.ch = ch;
                 map = mapString.ToList();
             }
 
             public void OnReady()
             {
-                grid = new(this, 4, 4);
+                grid = new(this, cw, ch);
             }
 
-            public int GetHeight() => 8;
+            public int GetHeight() => h;
 
-            public int GetWidth() => 8;
+            public int GetWidth() => w;
 
-            public bool IsNavigable(int x, int y) => map[y * 8 + x] != '#';
+            public bool IsNavigable(int x, int y) => map[y * w + x] != '#';
 
             public void SetTile(int x, int y, char c)
             {
-                map[y * 8 + x] = c;
+                map[y * w + x] = c;
                 if (c == '#')
                 {
                     grid.AddTileAt(x, y);
@@ -66,43 +145,13 @@ namespace SpaceTest
             }
         }
 
-        private const string mockRooms =
-            "11#22222" +
-            "11#22222" +
-            "11#22222" +
-            "11#22222" +
-            "111##222" +
-            "11#11###" +
-            "1#111111" +
-            "11111111";
-
-        private const string mockRooms2 =
-            "11#22222" +
-            "11#22222" +
-            "11#22222" +
-            "11#22222" +
-            "111##222" +
-            "11#33###" +
-            "1#333333" +
-            "#3333333";
-
-        private const string mockRooms3 =
-            "11#44#22" +
-            "11###222" +
-            "11#22222" +
-            "11#22222" +
-            "111##222" +
-            "11#33###" +
-            "1#3333#5" +
-            "#33333#5";
-
         [Fact]
         public void CreatesTwoRooms()
         {
             var mockTileMap = new MockTileMap();
             mockTileMap.OnReady();
 
-            ValidateMap(mockTileMap, mockRooms, new int[2] { 30, 23 });
+            ValidateMap(mockTileMap, MOCK_ROOMS, new int[2] { 30, 23 });
         }
 
         [Fact]
@@ -164,7 +213,7 @@ namespace SpaceTest
             Assert.Equal(6, chunks[0, 1].regions[1].size);
             Assert.Equal(chunks[1, 1].regions[0].room, chunks[0, 1].regions[1].room);
 
-            ValidateMap(mockTileMap, mockRooms2, new int[3] { 14, 23, 15 });
+            ValidateMap(mockTileMap, MOCK_ROOMS_2, new int[3] { 14, 23, 15 });
         }
 
         [Fact]
@@ -187,7 +236,7 @@ namespace SpaceTest
             var links = mockTileMap.grid.linkCache;
             Assert.Equal(5, links.Count);
 
-            ValidateMap(mockTileMap, mockRooms3, new int[5] { 14, 18, 11, 2, 2 });
+            ValidateMap(mockTileMap, MOCK_ROOMS_3, new int[5] { 14, 18, 11, 2, 2 });
         }
 
         [Fact]
@@ -241,7 +290,39 @@ namespace SpaceTest
             Assert.Equal(chunks[0, 1].regions[0], link4.r1);
             Assert.Equal(chunks[1, 1].regions[0], link4.r2);
 
-            ValidateMap(mockTileMap, mockRooms, new int[2] { 30, 23 });
+            ValidateMap(mockTileMap, MOCK_ROOMS, new int[2] { 30, 23 });
+        }
+
+        [Fact]
+        public void ComplicatedAddingAndRemoving1()
+        {
+            var mockTileMap = new MockTileMap(MAP_STRING_COMPLICATED, 9, 6, 3, 3);
+            mockTileMap.OnReady();
+            mockTileMap.SetTile(1, 1, '.');
+            mockTileMap.SetTile(3, 3, '.');
+            mockTileMap.SetTile(5, 3, '.');
+
+            ValidateMap(mockTileMap, MOCK_ROOMS_COMPLICATED_1, new int[2] { 29, 1 });
+        }
+
+        [Fact]
+        public void ComplicatedAddingAndRemoving2()
+        {
+            var mockTileMap = new MockTileMap(MAP_STRING_COMPLICATED, 9, 6, 3, 3);
+            mockTileMap.OnReady();
+            mockTileMap.SetTile(3, 3, '.');
+            mockTileMap.SetTile(5, 3, '.');
+            mockTileMap.SetTile(2, 3, '#');
+            mockTileMap.SetTile(4, 2, '#');
+            mockTileMap.SetTile(6, 2, '.');
+
+            ValidateMap(mockTileMap, MOCK_ROOMS_COMPLICATED_2, new int[2] { 20, 8 });
+
+            mockTileMap.SetTile(2, 2, '.');
+            mockTileMap.SetTile(1, 2, '.');
+            mockTileMap.SetTile(5, 1, '#');
+
+            ValidateMap(mockTileMap, MOCK_ROOMS_COMPLICATED_3, new int[2] { 17, 12 });
         }
 
         private void ValidateMap(MockTileMap map, string expectedRooms, int[] sizes)
