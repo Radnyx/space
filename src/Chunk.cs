@@ -17,14 +17,14 @@ namespace Space
 
         public readonly int topLeftX, topLeftY;
 
+        public readonly Region?[,] regionTiles;
+
+        public List<Region> regions { private set; get; }
+
         private readonly ITileMap tileMap;
         private readonly LinkCache linkCache;
 
         private readonly int width, height;
-
-        private Region?[,] regionTiles;
-
-        public List<Region> regions { private set; get; }
 
         public Chunk(ITileMap tileMap, LinkCache linkCache, int topLeftX, int topLeftY, int width, int height)
         {
@@ -41,19 +41,40 @@ namespace Space
             RecalculateRegions();
         }
 
-        /// <returns>The room at the given tile coordinates within the chunk.</returns>
-        public Room? GetRoomAt(int x, int y)
+        /// <summary>
+        /// Replaces one region with another. 
+        /// <br/><br/>
+        /// All tiles belonging to the <c>original</c> region will now belong to the <c>other</c>, 
+        /// destroying the original region and adding the original's size to the other's room.
+        /// </summary>
+        public void ReplaceRegion(Region original, Region other)
         {
-            return regionTiles[x, y]?.room;
+            if (original == other) return;
+
+            other.room.size += original.size;
+
+            original.Destroy();
+            regions.Remove(original);
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    if (regionTiles[x, y] == original)
+                    {
+                        regionTiles[x, y] = other;
+                    }
+                }
+            }
         }
 
         public void RecalculateLinksRight(Chunk other)
         {
-            uint startLinkY = 0;
+            int startLinkY = 0;
             uint currentLinkSize = 0;
             Region? lastThisRegion = null;
             Region? lastOtherRegion = null;
-            for (uint y = 0; y < height; y++)
+            for (int y = 0; y < height; y++)
             {
                 var thisRegion = regionTiles[width - 1, y];
                 var otherRegion = other.regionTiles[0, y];
@@ -62,11 +83,10 @@ namespace Space
 
                 if (!continuing && currentLinkSize > 0)
                 {
-                    var link = LinkUtils.Hash((uint)(topLeftX + width - 1), (uint)(topLeftY + startLinkY), currentLinkSize, true);
-                    linkCache.Add(link, new LinkPair(lastThisRegion!, lastOtherRegion!));
-
-                    lastThisRegion!.links.Add(link);
-                    lastOtherRegion!.links.Add(link);
+                    AddLink(
+                        lastThisRegion!, lastOtherRegion!,
+                        topLeftX + width - 1, topLeftY + startLinkY, currentLinkSize, true
+                    );
 
                     // reset
                     currentLinkSize = 0;
@@ -95,21 +115,20 @@ namespace Space
             // we finished the loop while working on a link
             if (currentLinkSize > 0)
             {
-                var link = LinkUtils.Hash((uint)(topLeftX + width - 1), (uint)(topLeftY + startLinkY), currentLinkSize, true);
-                linkCache.Add(link, new LinkPair(lastThisRegion!, lastOtherRegion!));
-
-                lastThisRegion!.links.Add(link);
-                lastOtherRegion!.links.Add(link);
+                AddLink(
+                    lastThisRegion!, lastOtherRegion!,
+                    topLeftX + width - 1, topLeftY + startLinkY, currentLinkSize, true
+                );
             }
         }
 
         public void RecalculateLinksDown(Chunk other)
         {
-            uint startLinkX = 0;
+            int startLinkX = 0;
             uint currentLinkSize = 0;
             Region? lastThisRegion = null;
             Region? lastOtherRegion = null;
-            for (uint x = 0; x < width; x++)
+            for (int x = 0; x < width; x++)
             {
                 var thisRegion = regionTiles[x, height - 1];
                 var otherRegion = other.regionTiles[x, 0];
@@ -118,11 +137,11 @@ namespace Space
 
                 if (!continuing && currentLinkSize > 0)
                 {
-                    var link = LinkUtils.Hash((uint)(topLeftX + startLinkX), (uint)(topLeftY + height - 1), currentLinkSize, false);
-                    linkCache.Add(link, new LinkPair(lastThisRegion!, lastOtherRegion!));
 
-                    lastThisRegion!.links.Add(link);
-                    lastOtherRegion!.links.Add(link);
+                    AddLink(
+                        lastThisRegion!, lastOtherRegion!,
+                        topLeftX + startLinkX, topLeftY + height - 1, currentLinkSize, false
+                    );
 
                     // reset
                     currentLinkSize = 0;
@@ -151,12 +170,28 @@ namespace Space
             // we finished the loop while working on a link
             if (currentLinkSize > 0)
             {
-                var link = LinkUtils.Hash((uint)(topLeftX + startLinkX), (uint)(topLeftY + height - 1), currentLinkSize, false);
-                linkCache.Add(link, new LinkPair(lastThisRegion!, lastOtherRegion!));
-
-                lastThisRegion!.links.Add(link);
-                lastOtherRegion!.links.Add(link);
+                AddLink(
+                    lastThisRegion!, lastOtherRegion!,
+                    topLeftX + startLinkX, topLeftY + height - 1, currentLinkSize, false
+                );
             }
+        }
+
+        private void AddLink(Region r1, Region r2, int x, int y, uint size, bool direction)
+        {
+            var link = LinkUtils.Hash((uint)x, (uint)y, size, direction);
+
+            if (linkCache.ContainsKey(link))
+            {
+                // remove any dangling link references
+                linkCache[link].r1!.links.Remove(link);
+                linkCache[link].r2!.links.Remove(link);
+            }
+
+            linkCache[link] = new LinkPair(r1, r2);
+
+            r1.links.Add(link);
+            r2.links.Add(link);
         }
 
 
@@ -234,6 +269,45 @@ namespace Space
                     FloodFill(x, y);
                 }
             }
+        }
+
+        public void CreateNewRegion(int x, int y)
+        {
+            var region = new Region();
+            regions.Add(region);
+            region.IncrementSize();
+            regionTiles[x, y] = region;
+        }
+
+        public HashSet<Region> GetRegionsAdjacentTo(int x, int y)
+        {
+            HashSet<Region> regions = new(4);
+
+            if (x > 0)
+            {
+                var region = regionTiles[x - 1, y];
+                if (region != null) regions.Add(region);
+            }
+
+            if (y > 0)
+            {
+                var region = regionTiles[x, y - 1];
+                if (region != null) regions.Add(region);
+            }
+
+            if (x < width - 1)
+            {
+                var region = regionTiles[x + 1, y];
+                if (region != null) regions.Add(region);
+            }
+
+            if (y < height - 1)
+            {
+                var region = regionTiles[x, y + 1];
+                if (region != null) regions.Add(region);
+            }
+
+            return regions;
         }
 
         private void FloodFill(int startX, int startY)

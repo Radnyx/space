@@ -5,7 +5,7 @@ namespace Space
     {
         public Room room;
 
-        public readonly List<uint> links;
+        public readonly HashSet<uint> links;
 
         public int size { private set; get; }
 

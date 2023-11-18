@@ -263,7 +263,7 @@ namespace SpaceTest
                 for (var y = 0; y < 4; y++)
                 {
                     var c = map.expectedRegions[y * 4 + x];
-                    var room = chunk.GetRoomAt(x, y);
+                    var room = chunk.regionTiles[x, y]?.room;
 
                     if (c == '#')
                     {

@@ -7,24 +7,37 @@ namespace SpaceTest
 {
     public class ChunkGridTests
     {
+        private const string MAP_STRING_1 =
+            "..#....." +
+            "..#....." +
+            "..#....." +
+            "..#....." +
+            "...##..." +
+            "..#..###" +
+            ".#......" +
+            "........";
+
+        private const string MAP_STRING_2 =
+            "..#..#.." +
+            "..###..." +
+            "..#....." +
+            "..#....." +
+            "...##..." +
+            "..#..###" +
+            ".#....#." +
+            "#.....#.";
+
         private class MockTileMap : ITileMap
         {
-            private readonly string mapString =
-                "..#....." +
-                "..#....." +
-                "..#....." +
-                "..#....." +
-                "...##..." +
-                "..#..###" +
-                ".#......" +
-                "........";
+            private readonly string mapString;
 
-            private readonly List<char> map;
+            public readonly List<char> map;
 
             public ChunkGrid grid = null!;
 
-            public MockTileMap()
+            public MockTileMap(string mapString = MAP_STRING_1)
             {
+                this.mapString = mapString;
                 map = mapString.ToList();
             }
 
@@ -175,6 +188,60 @@ namespace SpaceTest
             Assert.Equal(5, links.Count);
 
             ValidateMap(mockTileMap, mockRooms3, new int[5] { 14, 18, 11, 2, 2 });
+        }
+
+        [Fact]
+        public void RemovingTileCombinesRegions()
+        {
+            var mockTileMap = new MockTileMap();
+            mockTileMap.OnReady();
+            var chunks = mockTileMap.grid.chunks;
+            mockTileMap.SetTile(3, 1, '#');
+            mockTileMap.SetTile(3, 1, '.');
+
+            Assert.Equal(2, chunks[0, 0].regions.Count);
+        }
+
+        [Fact]
+        public void RemovingMultipleTilesInARow()
+        {
+            var mockTileMap = new MockTileMap(MAP_STRING_2);
+            mockTileMap.OnReady();
+            mockTileMap.SetTile(0, 7, '.');
+            mockTileMap.SetTile(6, 7, '.');
+            mockTileMap.SetTile(3, 1, '.');
+            mockTileMap.SetTile(6, 6, '.');
+            mockTileMap.SetTile(5, 0, '.');
+            mockTileMap.SetTile(4, 1, '.');
+
+            Assert.Equal(mockTileMap.map, MAP_STRING_1.ToList());
+
+            var chunks = mockTileMap.grid.chunks;
+            Assert.Equal(2, chunks[0, 0].regions.Count);
+            Assert.Single(chunks[1, 0].regions);
+            Assert.Single(chunks[0, 1].regions);
+            Assert.Equal(2, chunks[1, 1].regions.Count);
+
+            var links = mockTileMap.grid.linkCache;
+            Assert.Equal(4, links.Count);
+
+            var link1 = links[0b1_000100_000000000000_000000000011u];
+            var link2 = links[0b0_000010_000000000011_000000000000u];
+            var link3 = links[0b0_000011_000000000011_000000000101u];
+            var link4 = links[0b1_000011_000000000101_000000000011u];
+            Assert.Equal(chunks[0, 0].regions[1], link1.r1);
+            Assert.Equal(chunks[1, 0].regions[0], link1.r2);
+
+            Assert.Equal(chunks[0, 0].regions[0], link2.r1);
+            Assert.Equal(chunks[0, 1].regions[0], link2.r2);
+
+            Assert.Equal(chunks[1, 0].regions[0], link3.r1);
+            Assert.Equal(chunks[1, 1].regions[1], link3.r2);
+
+            Assert.Equal(chunks[0, 1].regions[0], link4.r1);
+            Assert.Equal(chunks[1, 1].regions[0], link4.r2);
+
+            ValidateMap(mockTileMap, mockRooms, new int[2] { 30, 23 });
         }
 
         private void ValidateMap(MockTileMap map, string expectedRooms, int[] sizes)

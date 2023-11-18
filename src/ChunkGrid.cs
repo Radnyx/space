@@ -85,30 +85,62 @@ namespace Space
 
         public void RemoveTileAt(int x, int y)
         {
-            // 1. get the regions in the 4 adjacent tiles
-            // 2. merge all the rooms of these regions
-            // 2. pick one of the regions, replace all
-            //    tiles in these regions with that one region
-            // 3. increment size of this region by 1
-            // 4. if no regions are adjacent (surrounded by solid tiles),
-            //    then simply create a new region and new room
+            int chunkTileX = x % chunkSizeX;
+            int chunkTileY = y % chunkSizeY;
+            var chunk = GetChunkAt(x, y);
+
+            // 1. Get the regions in the 4 adjacent tiles (inside the chunk).
+            var regions = chunk.GetRegionsAdjacentTo(chunkTileX, chunkTileY);
+
+            // 2a. No neighbors. New region, new room.
+            if (regions.Count == 0)
+            {
+                chunk.CreateNewRegion(chunkTileX, chunkTileY);
+                return;
+            }
+
+            // 2b. Use the region belonging to the largest room.
+            var regionOfBiggestRoom = regions.MaxBy(RoomSize)!;
+            chunk.regionTiles[chunkTileX, chunkTileY] = regionOfBiggestRoom;
+            regionOfBiggestRoom.IncrementSize();
+
+            if (regions.Count == 1 && !IsChunkTileOnEdge(chunkTileX, chunkTileY))
+            {
+                // no effect on other regions or links
+                return;
+            }
+
+            // 3. Replace the other regions' tiles with this one.
+            foreach (var region in regions)
+            {
+                chunk.ReplaceRegion(region, regionOfBiggestRoom);
+            }
+
+            // 4. Recalculate the links
+            regionOfBiggestRoom.ResetLinks(linkCache);
+            RecalculateLinksForChunk(x / chunkSizeX, y / chunkSizeX);
+
+            // 5. Merge room into all connected regions.
+            MergeRoomsBreadthFirst(regionOfBiggestRoom);
         }
 
         /// <returns>
         /// The room at the given tile coordinates.
         /// </returns>
-        public Room? GetRoomAt(int x, int y)
-        {
-            return GetChunkAt(x, y).GetRoomAt(x % chunkSizeX, y % chunkSizeY);
-        }
+        public Room? GetRoomAt(int x, int y) => GetRegionAt(x, y)?.room;
+
+        /// <returns>
+        /// The region at the given tile coordinates.
+        /// </returns>
+        public Region? GetRegionAt(int x, int y) => GetChunkAt(x, y).regionTiles[x % chunkSizeX, y % chunkSizeY];
 
         /// <returns>
         /// The chunk at the given tile coordinates.
         /// </returns>
-        public Chunk GetChunkAt(int x, int y)
-        {
-            return chunks[x / chunkSizeX, y / chunkSizeY];
-        }
+        public Chunk GetChunkAt(int x, int y) => chunks[x / chunkSizeX, y / chunkSizeY];
+
+        private bool IsChunkTileOnEdge(int chunkTileX, int chunkTileY) =>
+            chunkTileX == 0 || chunkTileY == 0 || chunkTileX == chunkSizeX - 1 || chunkTileY == chunkSizeY - 1;
 
         private void RecalculateLinksForChunk(int x, int y)
         {
@@ -151,6 +183,7 @@ namespace Space
                     var otherRegion = linkPair.GetOtherRegion(r);
 
                     if (seen.Contains(otherRegion)) continue;
+                    if (otherRegion.room == r.room) continue;
 
                     otherRegion.ReplaceRoom(r.room);
 
@@ -179,5 +212,7 @@ namespace Space
                 }
             }
         }
+
+        private static int RoomSize(Region r) => r.room.size;
     }
 }

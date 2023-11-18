@@ -4,7 +4,8 @@ namespace Space
 {
     public struct LinkPair
     {
-        public Region? r1, r2;
+        public readonly Region r1, r2;
+
         public LinkPair(Region r1, Region r2)
         {
             this.r1 = r1;
