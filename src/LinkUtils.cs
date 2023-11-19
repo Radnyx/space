@@ -36,5 +36,14 @@ namespace Space
             }
             return link.r1!;
         }
+
+        public static string ToString(uint link)
+        {
+            uint x = link & (4096 - 1);
+            uint y = (link >> 12) & (4096 - 1);
+            uint size = (link >> 24) & (64 - 1);
+            bool right = ((link >> 30) & 1) == 1;
+            return $"({x}, {y}), size={size}, right={right}";
+        }
     }
 }

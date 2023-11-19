@@ -11,6 +11,7 @@ namespace Space
         public readonly Chunk[,] chunks;
         public readonly LinkCache linkCache;
 
+        private ITileMap tileMap;
         private readonly int chunkSizeX, chunkSizeY;
         private readonly int xChunks, yChunks;
 
@@ -31,6 +32,7 @@ namespace Space
                 throw new InvalidOperationException($"Chunk width and height must be at most {CHUNK_MAX_WIDTH_AND_HEIGHT} tiles each.");
             }
 
+            this.tileMap = tileMap;
             this.chunkSizeX = chunkSizeX;
             this.chunkSizeY = chunkSizeY;
 
@@ -57,18 +59,31 @@ namespace Space
 
         public void AddTileAt(int x, int y)
         {
+            int chunkTileX = x % chunkSizeX;
+            int chunkTileY = y % chunkSizeY;
             int chunkX = x / chunkSizeX;
             int chunkY = y / chunkSizeY;
             var chunk = chunks[chunkX, chunkY];
             int oldRegionCount = chunk.regions.Count;
 
-            // TODO: More sophisticated check in a 3x3 region to see if
-            //       it's even possible that new regions are added.
-            //       However, if the tile is placed on the edge of a chunk,
-            //       the links need to be recalculated for that edge.
+            if (CanParitionRegionsWithinChunk(x, y) || CanParitionRoomOutsideOfChunk(x, y))
+            {
+                chunk.RecalculateRegions();
+                RecalculateLinksForChunk(chunkX, chunkY);
+            }
+            else
+            {
+                var region = chunk.regionTiles[chunkTileX, chunkTileY];
+                region?.DecrementSize();
+                chunk.regionTiles[chunkTileX, chunkTileY] = null;
 
-            chunk.RecalculateRegions();
-            RecalculateLinksForChunk(chunkX, chunkY);
+                if (IsChunkTileOnEdge(chunkTileX, chunkTileY))
+                {
+                    region?.ResetLinks(linkCache);
+                    RecalculateLinksForChunk(chunkX, chunkY);
+                }
+                return;
+            }
 
             if (oldRegionCount == chunk.regions.Count)
             {
@@ -77,6 +92,7 @@ namespace Space
 
             Debug.Assert(oldRegionCount < chunk.regions.Count, "AddTileAt should only add regions.");
 
+            // TODO: merge outward index = 1 onward, but merge from the outside into index = 0 !
             foreach (var region in chunk.regions)
             {
                 MergeRoomsBreadthFirst(region);
@@ -120,11 +136,11 @@ namespace Space
             // 3. Replace the other regions' tiles with this one.
             foreach (var region in regions)
             {
+                region.ResetLinks(linkCache);
                 chunk.ReplaceRegion(region, regionOfBiggestRoom);
             }
 
             // 4. Recalculate the links
-            regionOfBiggestRoom.ResetLinks(linkCache);
             RecalculateLinksForChunk(x / chunkSizeX, y / chunkSizeX);
 
             // 5. Merge room into all connected regions.
@@ -218,6 +234,71 @@ namespace Space
                     }
                 }
             }
+        }
+
+        private bool CanParitionRegionsWithinChunk(int x, int y)
+        {
+            return CanPartitionRegions(x, y, false);
+        }
+
+        private bool CanParitionRoomOutsideOfChunk(int x, int y)
+        {
+            return CanPartitionRegions(x, y, true);
+        }
+
+        /// <returns>
+        /// True if adding a tile at this location has the posibility of
+        /// partitioning a region into multiple.
+        /// </returns>
+        /// <param name="cantCrossEdges">
+        /// If false, consider all tiles over the edge of the chunk to be non-navigable.
+        /// If true, actually inspect the tile on the other chunk.
+        /// </param>
+        /// <remarks>
+        /// In other words, if you could walk from one adjacent tile to
+        /// another adjacent tile, adding a tile here would make that impossible
+        /// within the 3x3 space.
+        /// </remarks>
+        private bool CanPartitionRegions(int x, int y, bool cantCrossEdges)
+        {
+            int chunkTileX = x % chunkSizeX;
+            int chunkTileY = y % chunkSizeY;
+            bool onLeftEdge = x <= 0 || (cantCrossEdges && chunkTileX == 0);
+            bool onTopEdge = y <= 0 || (cantCrossEdges && chunkTileY == 0);
+            bool onRightEdge = x >= tileMap.GetWidth() - 1 || (cantCrossEdges && chunkTileX == chunkSizeX - 1);
+            bool onBottomEdge = y >= tileMap.GetHeight() - 1 || (cantCrossEdges && chunkTileY == chunkSizeY - 1);
+
+            bool a = onLeftEdge || onTopEdge || !tileMap.IsNavigable(x - 1, y - 1);
+            bool b = onTopEdge || !tileMap.IsNavigable(x, y - 1);
+            bool c = onRightEdge || onTopEdge || !tileMap.IsNavigable(x + 1, y - 1);
+            bool d = onLeftEdge || !tileMap.IsNavigable(x - 1, y);
+            bool f = onRightEdge || !tileMap.IsNavigable(x + 1, y);
+            bool g = onLeftEdge || onBottomEdge || !tileMap.IsNavigable(x - 1, y + 1);
+            bool h = onBottomEdge || !tileMap.IsNavigable(x, y + 1);
+            bool i = onRightEdge || onBottomEdge || !tileMap.IsNavigable(x + 1, y + 1);
+
+            /**
+                Horrifying eldritch computer generated expression to quickly check the surrounding tiles. 
+                I couldn't think of a simpler way that didn't involve loops. So I filtered the 256 possibilities 
+                to the 123 cases where this returns true, built a giant boolean expression, and simplified it.
+            */
+            return
+                (a && !b && c && !h) ||
+                (a && !b && !d && f) ||
+                (a && !b && !d && h) ||
+                (a && !d && g && !h) ||
+                (a && !f && !h && i) ||
+                (b && !d && !f && h) ||
+                (b && !d && g && !h) ||
+                (b && !f && !h && i) ||
+                (!b && c && d && !f) ||
+                (!b && c && !f && h) ||
+                (!b && c && g && !h) ||
+                (!b && d && f && !h) ||
+                (c && !f && !h && i) ||
+                (d && !f && !h && i) ||
+                (!d && f && g && !h) ||
+                (!f && g && !h && i);
         }
 
         private static int RoomSize(Region r) => r.room.size;
