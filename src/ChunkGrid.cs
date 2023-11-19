@@ -64,14 +64,9 @@ namespace Space
             int chunkX = x / chunkSizeX;
             int chunkY = y / chunkSizeY;
             var chunk = chunks[chunkX, chunkY];
-            int oldRegionCount = chunk.regions.Count;
 
-            if (CanParitionRegionsWithinChunk(x, y) || CanParitionRoomOutsideOfChunk(x, y))
-            {
-                chunk.RecalculateRegions();
-                RecalculateLinksForChunk(chunkX, chunkY);
-            }
-            else
+            // 1. If we definitely can't add new regions, don't bother floodfilling.
+            if (!CanParitionRegionsWithinChunk(x, y) && !CanParitionRoomOutsideOfChunk(x, y))
             {
                 var region = chunk.regionTiles[chunkTileX, chunkTileY];
                 region?.DecrementSize();
@@ -85,17 +80,31 @@ namespace Space
                 return;
             }
 
+            // 2. Re-floodfill this chunk.
+            int oldRegionCount = chunk.regions.Count;
+
+            chunk.RecalculateRegions();
+            RecalculateLinksForChunk(chunkX, chunkY);
+
             if (oldRegionCount == chunk.regions.Count)
             {
                 return;
             }
 
-            Debug.Assert(oldRegionCount < chunk.regions.Count, "AddTileAt should only add regions.");
+            Debug.Assert(oldRegionCount < chunk.regions.Count, "AddTileAt shouldn't remove adjacent regions.");
 
-            // TODO: merge outward index = 1 onward, but merge from the outside into index = 0 !
-            foreach (var region in chunk.regions)
+            // 3a. Pick one region to maintain its old room.
+            var firstRegion = chunk.regions[0];
+            if (firstRegion.links.Count > 0)
             {
-                MergeRoomsBreadthFirst(region);
+                var otherRegion = linkCache[firstRegion.links.First()].GetOtherRegion(firstRegion);
+                firstRegion.ReplaceRoom(otherRegion.room);
+            }
+
+            // 3b. All other regions will proliferate their new rooms outward.
+            for (int i = 1; i < chunk.regions.Count; i++)
+            {
+                MergeRoomsBreadthFirst(chunk.regions[i]);
             }
         }
 
