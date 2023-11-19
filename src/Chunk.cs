@@ -51,7 +51,7 @@ namespace Space
         {
             if (original == other) return;
 
-            other.room.size += original.size;
+            other.AddSize(original.size);
 
             original.Destroy();
             regions.Remove(original);

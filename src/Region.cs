@@ -17,8 +17,19 @@ namespace Space
 
         public void IncrementSize()
         {
-            size++;
-            room.size++;
+            AddSize(1);
+        }
+
+        public void AddSize(int i)
+        {
+            size += i;
+            room.size += i;
+        }
+
+        public void DecrementSize()
+        {
+            size--;
+            room.size--;
         }
 
         /// <summary>
