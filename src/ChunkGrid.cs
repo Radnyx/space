@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Space
 {
@@ -41,7 +44,7 @@ namespace Space
 
             linkCache = new(4 * xChunks * yChunks);
 
-            chunks = new Chunk[chunkSizeX, chunkSizeY];
+            chunks = new Chunk[xChunks, yChunks];
 
             for (var x = 0; x < xChunks; x++)
             {
