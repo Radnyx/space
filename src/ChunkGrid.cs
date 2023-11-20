@@ -270,6 +270,8 @@ namespace Space
         /// </remarks>
         private bool CanPartitionRegions(int x, int y, bool cantCrossEdges)
         {
+            // TODO: a look up table will be a bit faster and probably more readable...
+
             int chunkTileX = x % chunkSizeX;
             int chunkTileY = y % chunkSizeY;
             bool onLeftEdge = x <= 0 || (cantCrossEdges && chunkTileX == 0);
