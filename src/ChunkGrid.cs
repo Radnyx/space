@@ -13,10 +13,13 @@ namespace Space
 
         public readonly Chunk[,] chunks;
         public readonly LinkCache linkCache;
+        public readonly int xChunks, yChunks;
+
+        public delegate void UpdateChunkEventHandler(int chunkX, int chunkY);
+        public event UpdateChunkEventHandler? UpdateChunk;
 
         private ITileMap tileMap;
         private readonly int chunkSizeX, chunkSizeY;
-        private readonly int xChunks, yChunks;
 
         public ChunkGrid(ITileMap tileMap, int chunkSizeX, int chunkSizeY)
         {
@@ -68,6 +71,8 @@ namespace Space
             int chunkY = y / chunkSizeY;
             var chunk = chunks[chunkX, chunkY];
 
+            UpdateChunk?.Invoke(chunkX, chunkY);
+
             // 1. If we definitely can't add new regions, don't bother floodfilling.
             if (!CanParitionRegionsWithinChunk(x, y) && !CanParitionRoomOutsideOfChunk(x, y))
             {
@@ -115,7 +120,11 @@ namespace Space
         {
             int chunkTileX = x % chunkSizeX;
             int chunkTileY = y % chunkSizeY;
-            var chunk = GetChunkAt(x, y);
+            int chunkX = x / chunkSizeX;
+            int chunkY = y / chunkSizeY;
+            var chunk = chunks[chunkX, chunkY];
+
+            UpdateChunk?.Invoke(chunkX, chunkY);
 
             // 1. Get the regions in the 4 adjacent tiles (inside the chunk).
             var regions = chunk.GetRegionsAdjacentTo(chunkTileX, chunkTileY);
@@ -167,12 +176,8 @@ namespace Space
         /// <returns>
         /// The region at the given tile coordinates.
         /// </returns>
-        public Region? GetRegionAt(int x, int y) => GetChunkAt(x, y).regionTiles[x % chunkSizeX, y % chunkSizeY];
-
-        /// <returns>
-        /// The chunk at the given tile coordinates.
-        /// </returns>
-        public Chunk GetChunkAt(int x, int y) => chunks[x / chunkSizeX, y / chunkSizeY];
+        public Region? GetRegionAt(int x, int y) =>
+            chunks[x / chunkSizeX, y / chunkSizeY].regionTiles[x % chunkSizeX, y % chunkSizeY];
 
         private bool IsChunkTileOnEdge(int chunkTileX, int chunkTileY) =>
             chunkTileX == 0 || chunkTileY == 0 || chunkTileX == chunkSizeX - 1 || chunkTileY == chunkSizeY - 1;
