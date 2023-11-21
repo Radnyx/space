@@ -475,6 +475,23 @@ namespace SpaceTest
             AssertRegionsSumToRooms(mockTileMap);
         }
 
+        [Fact]
+        public void RecalculatingSingleChunkKeepsRooms()
+        {
+            var mockTileMap = new MockTileMap();
+            mockTileMap.OnReady();
+
+            var grid = mockTileMap.grid;
+
+            Assert.Equal(grid.GetRoomAt(7, 4), grid.GetRoomAt(6, 0));
+
+            mockTileMap.SetTile(6, 1, '#');
+            mockTileMap.SetTile(6, 2, '#');
+            mockTileMap.SetTile(6, 3, '#');
+
+            Assert.Equal(grid.GetRoomAt(7, 4), grid.GetRoomAt(6, 0));
+        }
+
         public static string SpliceText(string text, int lineLength)
         {
             return Regex.Replace(text, "(.{" + lineLength + "})", "$1\n");

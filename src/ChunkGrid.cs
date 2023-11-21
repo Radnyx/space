@@ -18,6 +18,9 @@ namespace Space
         public delegate void UpdateChunkEventHandler(int chunkX, int chunkY);
         public event UpdateChunkEventHandler? UpdateChunk;
 
+        public delegate void UpdateRegionEventHandler(Region region);
+        public event UpdateRegionEventHandler? UpdateRegion;
+
         private ITileMap tileMap;
         private readonly int chunkSizeX, chunkSizeY;
 
@@ -96,6 +99,10 @@ namespace Space
 
             if (oldRegionCount == chunk.regions.Count)
             {
+                foreach (var region in chunk.regions)
+                {
+                    MergeRoomFromOutside(region);
+                }
                 return;
             }
 
@@ -105,8 +112,7 @@ namespace Space
             var firstRegion = chunk.regions[0];
             if (firstRegion.links.Count > 0)
             {
-                var otherRegion = linkCache[firstRegion.links.First()].GetOtherRegion(firstRegion);
-                firstRegion.ReplaceRoom(otherRegion.room);
+                MergeRoomFromOutside(firstRegion);
             }
 
             // 3b. All other regions will proliferate their new rooms outward.
@@ -176,8 +182,14 @@ namespace Space
         /// <returns>
         /// The region at the given tile coordinates.
         /// </returns>
-        public Region? GetRegionAt(int x, int y) =>
-            chunks[x / chunkSizeX, y / chunkSizeY].regionTiles[x % chunkSizeX, y % chunkSizeY];
+        public Region? GetRegionAt(int x, int y)
+        {
+            if (x < 0 || y < 0 || x >= tileMap.GetWidth() || y >= tileMap.GetHeight())
+            {
+                return null;
+            }
+            return chunks[x / chunkSizeX, y / chunkSizeY].regionTiles[x % chunkSizeX, y % chunkSizeY];
+        }
 
         private bool IsChunkTileOnEdge(int chunkTileX, int chunkTileY) =>
             chunkTileX == 0 || chunkTileY == 0 || chunkTileX == chunkSizeX - 1 || chunkTileY == chunkSizeY - 1;
@@ -203,6 +215,16 @@ namespace Space
             }
         }
 
+        private void MergeRoomFromOutside(Region firstRegion)
+        {
+            if (firstRegion.links.Count == 0)
+            {
+                return;
+            }
+            var otherRegion = linkCache[firstRegion.links.First()].GetOtherRegion(firstRegion);
+            firstRegion.ReplaceRoom(otherRegion.room);
+        }
+
         private void MergeRoomsBreadthFirst(Region region)
         {
             // TODO: Could try priority queue and try to merge with regions
@@ -226,6 +248,8 @@ namespace Space
                     if (otherRegion.room == r.room) continue;
 
                     otherRegion.ReplaceRoom(r.room);
+
+                    UpdateRegion?.Invoke(otherRegion);
 
                     queue.Enqueue(otherRegion);
                     seen.Add(otherRegion);
