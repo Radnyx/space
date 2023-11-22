@@ -137,6 +137,13 @@ namespace SpaceTest
             "1111111#11111111" +
             "1111111111111111";
 
+        private const string MOCK_ROOMS_LARGE_3 =
+            "1111111111111111" +
+            "1111111#11111111" +
+            "111111#2#1111111" +
+            "1111111#11111111" +
+            "1111111111111111";
+
         private readonly HashSet<(int, int)> MOCK_RANDOM_ADD_REMOVE_1 = new() {
            (4, 7), (10, 4), (0, 2), (4, 14), (3, 10), (3, 13), (2, 12),
            (10, 14), (6, 11), (15, 8), (4, 11), (3, 2), (11, 0), (1, 15), (7, 4), (6, 11)
@@ -579,17 +586,27 @@ namespace SpaceTest
         }
 
         [Fact]
-        public void FinishingARoomOverEdgeCreatesNewRoom()
+        public void CorrectlyLoadsRoomsBetweenEdges()
         {
             var mockTileMap = new MockTileMap(MAP_STRING_LARGE_2, 16, 5, 8, 5);
             mockTileMap.OnReady();
 
-            //Assert.Equal(
-            //    mockTileMap.grid.GetRoomAt(7, 3),
-            //    mockTileMap.grid.GetRoomAt(9, 3)
-            //);
-
             ValidateMap(mockTileMap, MOCK_ROOMS_LARGE_2, new int[1] { 77 });
+        }
+
+        [Fact]
+        public void FinishingARoomOverEdgeCreatesNewRoom()
+        {
+            var mockTileMap = new MockTileMap(MAP_STRING_LARGE_2, 16, 5, 8, 5);
+            mockTileMap.OnReady();
+            mockTileMap.SetTile(8, 2, '#');
+
+            Assert.NotEqual(
+                mockTileMap.grid.GetRoomAt(7, 2),
+                mockTileMap.grid.GetRoomAt(9, 2)
+            );
+
+            ValidateMap(mockTileMap, MOCK_ROOMS_LARGE_3, new int[2] { 76, 1 });
         }
 
         private void AssertRegionsSumToRooms(MockTileMap map)
