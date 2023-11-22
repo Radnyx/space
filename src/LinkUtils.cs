@@ -2,6 +2,20 @@ global using LinkCache = System.Collections.Generic.Dictionary<uint, Space.LinkP
 
 namespace Space
 {
+    public struct LinkData
+    {
+        public uint x, y, size;
+        public bool right;
+
+        public LinkData(uint link)
+        {
+            this.x = link & (4096 - 1);
+            this.y = (link >> 12) & (4096 - 1);
+            this.size = (link >> 24) & (64 - 1);
+            this.right = ((link >> 30) & 1) == 1;
+        }
+    }
+
     public struct LinkPair
     {
         public readonly Region r1, r2;
