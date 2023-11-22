@@ -34,6 +34,12 @@ namespace Space
             room.size--;
         }
 
+        public void ClearSize()
+        {
+            room.size -= size;
+            size = 0;
+        }
+
         /// <summary>
         /// All links in this region are removed from the <c>linkCache</c>,
         /// and removed from their associated regions.
@@ -62,6 +68,11 @@ namespace Space
             Destroy();
             room = newRoom;
             room.size += size;
+        }
+
+        public override string ToString()
+        {
+            return $"Region(room id={room.id}, size={size})";
         }
     }
 }

@@ -103,6 +103,8 @@ namespace Space
                 {
                     MergeRoomFromOutside(region);
                 }
+
+                RecalculateRegionsOverEdge(x, y);
                 return;
             }
 
@@ -119,6 +121,25 @@ namespace Space
             for (int i = 1; i < chunk.regions.Count; i++)
             {
                 MergeRoomsBreadthFirst(chunk.regions[i]);
+            }
+
+            RecalculateRegionsOverEdge(x, y);
+        }
+
+        private void RecalculateRegionsOverEdge(int x, int y)
+        {
+            var tilesPositionsOverEdge = GetTilePositionsOverEdge(x, y);
+            foreach (var (overEdgeX, overEdgeY) in tilesPositionsOverEdge)
+            {
+                var region = GetRegionAt(overEdgeX, overEdgeY);
+
+                if (region == null) continue;
+
+                var oldSize = region.size;
+                region.ClearSize();
+                region.room = new Room();
+                region.AddSize(oldSize);
+                MergeRoomsBreadthFirst(region);
             }
         }
 
@@ -194,6 +215,30 @@ namespace Space
         private bool IsChunkTileOnEdge(int chunkTileX, int chunkTileY) =>
             chunkTileX == 0 || chunkTileY == 0 || chunkTileX == chunkSizeX - 1 || chunkTileY == chunkSizeY - 1;
 
+        public List<(int, int)> GetTilePositionsOverEdge(int x, int y)
+        {
+            var tilePositions = new List<(int, int)>(4);
+            int chunkTileX = x % chunkSizeX;
+            int chunkTileY = y % chunkSizeY;
+            if (chunkTileX == 0)
+            {
+                tilePositions.Add((x - 1, y));
+            }
+            if (chunkTileY == 0)
+            {
+                tilePositions.Add((x, y - 1));
+            }
+            if (chunkTileX == chunkSizeX - 1)
+            {
+                tilePositions.Add((x + 1, y));
+            }
+            if (chunkTileY == chunkSizeY - 1)
+            {
+                tilePositions.Add((x, y + 1));
+            }
+            return tilePositions;
+        }
+
         private void RecalculateLinksForChunk(int x, int y)
         {
             var currentChunk = chunks[x, y];
@@ -239,6 +284,8 @@ namespace Space
             {
                 var r = queue.Dequeue();
 
+                UpdateRegion?.Invoke(r);
+
                 foreach (var link in r.links)
                 {
                     var linkPair = linkCache[link];
@@ -248,8 +295,6 @@ namespace Space
                     if (otherRegion.room == r.room) continue;
 
                     otherRegion.ReplaceRoom(r.room);
-
-                    UpdateRegion?.Invoke(otherRegion);
 
                     queue.Enqueue(otherRegion);
                     seen.Add(otherRegion);

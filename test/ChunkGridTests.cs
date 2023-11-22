@@ -606,7 +606,7 @@ namespace SpaceTest
                 mockTileMap.grid.GetRoomAt(9, 2)
             );
 
-            ValidateMap(mockTileMap, MOCK_ROOMS_LARGE_3, new int[2] { 76, 1 });
+            ValidateMap(mockTileMap, MOCK_ROOMS_LARGE_3, new int[2] { 75, 1 });
         }
 
         private void AssertRegionsSumToRooms(MockTileMap map)
@@ -620,9 +620,11 @@ namespace SpaceTest
 
             foreach (var entry in totals)
             {
-                Assert.Equal(entry.Key.size, entry.Value);
+                Assert.True(
+                    entry.Key.size == entry.Value,
+                    $"{entry.Key.size} != {entry.Value}\n" + string.Join(", ", regions)
+                );
             }
-
         }
 
         private HashSet<Region> GetAllRegions(MockTileMap map)
