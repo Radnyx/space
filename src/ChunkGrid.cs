@@ -265,13 +265,31 @@ namespace Space
                 {
                     if (x < xChunks - 1)
                     {
-                        chunks[x, y].MergeRight(chunks[x + 1, y]);
                         chunks[x, y].RecalculateLinksRight(chunks[x + 1, y]);
                     }
                     if (y < yChunks - 1)
                     {
-                        chunks[x, y].MergeDown(chunks[x, y + 1]);
                         chunks[x, y].RecalculateLinksDown(chunks[x, y + 1]);
+                    }
+                }
+            }
+
+            var rooms = new HashSet<Room>();
+
+            for (var x = 0; x < xChunks; x++)
+            {
+                for (var y = 0; y < yChunks; y++)
+                {
+                    foreach (var region in chunks[x, y].regions)
+                    {
+                        if (rooms.Contains(region.room))
+                        {
+                            continue;
+                        }
+
+                        MergeRoomsBreadthFirst(region);
+
+                        rooms.Add(region.room);
                     }
                 }
             }

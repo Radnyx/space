@@ -196,51 +196,6 @@ namespace Space
             r2.links.Add(link);
         }
 
-
-        /// <summary>
-        /// Merges adjacent rooms between this right edge and the other Chunk's left edge.
-        /// </summary>
-        public void MergeRight(Chunk other)
-        {
-            for (var y = 0; y < height; y++)
-            {
-                var thisRegion = regionTiles[width - 1, y];
-                var otherRegion = other.regionTiles[0, y];
-                if (thisRegion == null || otherRegion == null)
-                {
-                    continue;
-                }
-
-                if (thisRegion.room != otherRegion.room)
-                {
-                    thisRegion.room.MergeFrom(otherRegion.room);
-                    otherRegion.room = thisRegion.room;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Merges adjacent rooms between this bottom edge and the other Chunk's top edge.
-        /// </summary>
-        public void MergeDown(Chunk other)
-        {
-            for (var x = 0; x < width; x++)
-            {
-                var thisRegion = regionTiles[x, height - 1];
-                var otherRegion = other.regionTiles[x, 0];
-                if (thisRegion == null || otherRegion == null)
-                {
-                    continue;
-                }
-
-                if (thisRegion.room != otherRegion.room)
-                {
-                    thisRegion.room.MergeFrom(otherRegion.room);
-                    otherRegion.room = thisRegion.room;
-                }
-            }
-        }
-
         /// <summary>
         /// Finds distinct regions in the chunk separated by non-navigable tiles.
         /// Creates new region and room objects and classifies all non-navigable 

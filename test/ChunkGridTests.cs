@@ -62,6 +62,13 @@ namespace SpaceTest
             "................" +
             "................";
 
+        private const string MAP_STRING_LARGE_2 =
+            "................" +
+            ".......#........" +
+            "......#........." +
+            ".......#........" +
+            "................";
+
         private const string MAP_STRING_TINY =
             ".." +
             ".." +
@@ -122,6 +129,13 @@ namespace SpaceTest
             "11#1#2222" +
             "111###222" +
             "111###222";
+
+        private const string MOCK_ROOMS_LARGE_2 =
+            "1111111111111111" +
+            "1111111#11111111" +
+            "111111#111111111" +
+            "1111111#11111111" +
+            "1111111111111111";
 
         private readonly HashSet<(int, int)> MOCK_RANDOM_ADD_REMOVE_1 = new() {
            (4, 7), (10, 4), (0, 2), (4, 14), (3, 10), (3, 13), (2, 12),
@@ -562,6 +576,20 @@ namespace SpaceTest
 
             Assert.Single(mockTileMap.grid.chunks[0, 0].regions[0].links);
             Assert.Single(mockTileMap.grid.chunks[0, 1].regions[0].links);
+        }
+
+        [Fact]
+        public void FinishingARoomOverEdgeCreatesNewRoom()
+        {
+            var mockTileMap = new MockTileMap(MAP_STRING_LARGE_2, 16, 5, 8, 5);
+            mockTileMap.OnReady();
+
+            //Assert.Equal(
+            //    mockTileMap.grid.GetRoomAt(7, 3),
+            //    mockTileMap.grid.GetRoomAt(9, 3)
+            //);
+
+            ValidateMap(mockTileMap, MOCK_ROOMS_LARGE_2, new int[1] { 77 });
         }
 
         private void AssertRegionsSumToRooms(MockTileMap map)
