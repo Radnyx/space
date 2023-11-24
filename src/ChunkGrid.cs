@@ -215,6 +215,30 @@ namespace Space
         private bool IsChunkTileOnEdge(int chunkTileX, int chunkTileY) =>
             chunkTileX == 0 || chunkTileY == 0 || chunkTileX == chunkSizeX - 1 || chunkTileY == chunkSizeY - 1;
 
+        /*
+        public List<(int, int)> GetAdjacentTilePositions(int x, int y)
+        {
+            var tilePositions = new List<(int, int)>(4);
+            if (x > 0)
+            {
+                tilePositions.Add((x - 1, y));
+            }
+            if (y > 0)
+            {
+                tilePositions.Add((x, y - 1));
+            }
+            if (x < tileMap.GetWidth() - 1)
+            {
+                tilePositions.Add((x + 1, y));
+            }
+            if (y < tileMap.GetHeight() - 1)
+            {
+                tilePositions.Add((x, y + 1));
+            }
+            return tilePositions;
+        }
+        */
+
         public List<(int, int)> GetTilePositionsOverEdge(int x, int y)
         {
             var tilePositions = new List<(int, int)>(4);

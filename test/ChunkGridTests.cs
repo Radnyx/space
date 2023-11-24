@@ -69,6 +69,13 @@ namespace SpaceTest
             ".......#........" +
             "................";
 
+        private const string MAP_STRING_LARGE_3 =
+            "................" +
+            ".......##......." +
+            ".........#..#.#." +
+            ".......##....#.." +
+            "................";
+
         private const string MAP_STRING_TINY =
             ".." +
             ".." +
@@ -607,6 +614,21 @@ namespace SpaceTest
             );
 
             ValidateMap(mockTileMap, MOCK_ROOMS_LARGE_3, new int[2] { 75, 1 });
+        }
+
+        [Fact(Skip = "TODO")]
+        public void AddingTileShouldntRecalculateFarAwayRegions()
+        {
+            var mockTileMap = new MockTileMap(MAP_STRING_LARGE_3, 16, 5, 8, 5);
+            mockTileMap.OnReady();
+
+            var originalRoomID = mockTileMap.grid.GetRegionAt(8, 2);
+
+            mockTileMap.SetTile(13, 1, '#');
+
+            var newRoomId = mockTileMap.grid.GetRegionAt(8, 2);
+
+            Assert.Equal(originalRoomID, newRoomId);
         }
 
         private void AssertRegionsSumToRooms(MockTileMap map)
