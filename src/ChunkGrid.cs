@@ -9,7 +9,8 @@ namespace Space
     {
         private const int TILE_MAP_MAX_WIDTH_AND_HEIGHT = 1 << 12;
         private const int CHUNK_MAX_WIDTH_AND_HEIGHT = 1 << 6;
-        private const int REGION_BFS_QUEUE_CAPACITY = 16;
+        private const int REGION_BFS_QUEUE_CAPACITY = 64;
+        private const int REGION_BFS_HASHSET_CAPACITY = 256;
 
         public readonly Chunk[,] chunks;
         public readonly LinkCache linkCache;
@@ -118,9 +119,10 @@ namespace Space
             }
 
             // 3b. All other regions will proliferate their new rooms outward.
+            HashSet<Region> seen = new(REGION_BFS_HASHSET_CAPACITY);
             for (int i = 1; i < chunk.regions.Count; i++)
             {
-                MergeRoomsBreadthFirst(chunk.regions[i]);
+                MergeRoomsBreadthFirst(chunk.regions[i], seen);
             }
 
             RecalculateRegionsOverEdge(x, y);
@@ -128,6 +130,8 @@ namespace Space
 
         private void RecalculateRegionsOverEdge(int x, int y)
         {
+            HashSet<Region> seen = new(REGION_BFS_HASHSET_CAPACITY);
+
             var tilesPositionsOverEdge = GetTilePositionsOverEdge(x, y);
             foreach (var (overEdgeX, overEdgeY) in tilesPositionsOverEdge)
             {
@@ -139,7 +143,7 @@ namespace Space
                 region.ClearSize();
                 region.room = new Room();
                 region.AddSize(oldSize);
-                MergeRoomsBreadthFirst(region);
+                MergeRoomsBreadthFirst(region, seen);
             }
         }
 
@@ -164,7 +168,7 @@ namespace Space
                 if (IsChunkTileOnEdge(chunkTileX, chunkTileY))
                 {
                     RecalculateLinksForChunk(x / chunkSizeX, y / chunkSizeX);
-                    MergeRoomsBreadthFirst(region);
+                    MergeRoomsBreadthFirst(region, new(REGION_BFS_HASHSET_CAPACITY));
                 }
 
                 return;
@@ -192,7 +196,7 @@ namespace Space
             RecalculateLinksForChunk(x / chunkSizeX, y / chunkSizeX);
 
             // 5. Merge room into all connected regions.
-            MergeRoomsBreadthFirst(regionOfBiggestRoom);
+            MergeRoomsBreadthFirst(regionOfBiggestRoom, new(REGION_BFS_HASHSET_CAPACITY));
         }
 
         /// <returns>
@@ -294,13 +298,12 @@ namespace Space
             firstRegion.ReplaceRoom(otherRegion.room);
         }
 
-        private void MergeRoomsBreadthFirst(Region region)
+        private void MergeRoomsBreadthFirst(Region region, HashSet<Region> seen)
         {
             // TODO: Could try priority queue and try to merge with regions
             // closest to our original chunk, increasing the likelihood that we
             // can stop early (i.e., no new room has been created).
 
-            HashSet<Region> seen = new(REGION_BFS_QUEUE_CAPACITY);
             Queue<Region> queue = new(REGION_BFS_QUEUE_CAPACITY);
             queue.Enqueue(region);
 
@@ -356,7 +359,7 @@ namespace Space
                             continue;
                         }
 
-                        MergeRoomsBreadthFirst(region);
+                        MergeRoomsBreadthFirst(region, new(REGION_BFS_HASHSET_CAPACITY));
 
                         rooms.Add(region.room);
                     }
