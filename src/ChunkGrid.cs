@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Benchmarking;
 
 namespace Space
 {
@@ -69,6 +70,9 @@ namespace Space
 
         public void AddTileAt(int x, int y)
         {
+#if DEBUG
+            Benchmark.Start("AddTileAt");
+#endif
             int chunkTileX = x % chunkSizeX;
             int chunkTileY = y % chunkSizeY;
             int chunkX = x / chunkSizeX;
@@ -89,6 +93,10 @@ namespace Space
                     region?.ResetLinks(linkCache);
                     RecalculateLinksForChunk(chunkX, chunkY);
                 }
+
+#if DEBUG
+                Benchmark.Stop("AddTileAt");
+#endif
                 return;
             }
 
@@ -106,6 +114,10 @@ namespace Space
                 }
 
                 RecalculateRegionsOverEdge(x, y);
+
+#if DEBUG
+                Benchmark.Stop("AddTileAt");
+#endif
                 return;
             }
 
@@ -126,6 +138,10 @@ namespace Space
             }
 
             RecalculateRegionsOverEdge(x, y);
+
+#if DEBUG
+            Benchmark.Stop("AddTileAt");
+#endif
         }
 
         private void RecalculateRegionsOverEdge(int x, int y)
