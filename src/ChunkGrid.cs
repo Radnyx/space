@@ -109,7 +109,7 @@ namespace Space
                 return;
             }
 
-            Debug.Assert(oldRegionCount < chunk.regions.Count, "AddTileAt shouldn't remove adjacent regions.");
+            Debug.Assert(oldRegionCount < chunk.regions.Count, "AddTileAt shouldn't decrease number of regions.");
 
             // 3a. Pick one region to maintain its old room.
             var firstRegion = chunk.regions[0];
