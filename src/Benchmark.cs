@@ -16,6 +16,11 @@ namespace Benchmarking
 
             public void Add(int sample)
             {
+                if (n >= 60)
+                {
+                    current = 0;
+                    n = 0;
+                }
                 current = (n * current + sample) / (n + 1);
                 n += 1;
                 dirty = true;
