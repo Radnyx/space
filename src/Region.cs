@@ -5,14 +5,18 @@ namespace Space
 
     public class Region
     {
+        public readonly int chunkX, chunkY;
+
         public Room room;
 
         public readonly HashSet<uint> links;
 
         public int size { private set; get; }
 
-        public Region()
+        public Region(int chunkX, int chunkY)
         {
+            this.chunkX = chunkX;
+            this.chunkY = chunkY;
             room = new Room();
             links = new(4);
         }
@@ -72,7 +76,7 @@ namespace Space
 
         public override string ToString()
         {
-            return $"Region(room id={room.id}, size={size})";
+            return $"Region(room id={room.id}, size={size}, chunkX={chunkX}, chunkY={chunkY})";
         }
     }
 }

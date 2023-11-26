@@ -283,6 +283,10 @@ namespace Space
             return tilePositions;
         }
 
+        public Region GetOtherRegionFromLink(uint link, Region thisRegion) {
+            return linkCache[link].GetOtherRegion(thisRegion);
+        }
+
         private void RecalculateLinksForChunk(int x, int y)
         {
             var currentChunk = chunks[x, y];

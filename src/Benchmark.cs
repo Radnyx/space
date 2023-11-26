@@ -65,15 +65,5 @@ namespace Benchmarking
             }
             return newAverages.Select(average => (average.Key, average.Value.current)).ToList();
         }
-
-        public static int? GetAverageNanoseconds(string id)
-        {
-            if (averages.ContainsKey(id))
-            {
-                return averages[id].current;
-            }
-
-            return null;
-        }
     }
 }

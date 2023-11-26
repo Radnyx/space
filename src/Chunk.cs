@@ -230,7 +230,7 @@ namespace Space
 
         public Region CreateNewRegion(int x, int y)
         {
-            var region = new Region();
+            var region = new Region(GetChunkX(), GetChunkY());
             regions.Add(region);
             region.IncrementSize();
             regionTiles[x, y] = region;
@@ -291,7 +291,7 @@ namespace Space
                     {
                         if (region == null)
                         {
-                            region = new Region();
+                            region = new Region(GetChunkX(), GetChunkY());
                             regions.Add(region);
                         }
 
@@ -312,7 +312,7 @@ namespace Space
                     {
                         if (region == null)
                         {
-                            region = new Region();
+                            region = new Region(GetChunkX(), GetChunkY());
                             regions.Add(region);
                         }
 
@@ -344,6 +344,16 @@ namespace Space
                 x >= 0 && x < width && y >= 0 && y < height &&
                 tileMap.IsNavigable(topLeftX + x, topLeftY + y) &&
                 regionTiles[x, y] == null;
+        }
+
+        private int GetChunkX()
+        {
+            return topLeftX / width;
+        }
+
+        private int GetChunkY()
+        {
+            return topLeftY / height;
         }
     }
 }
