@@ -16,6 +16,7 @@ namespace Space
         public readonly Chunk[,] chunks;
         public readonly LinkCache linkCache;
         public readonly int xChunks, yChunks;
+        public readonly int chunkSizeX, chunkSizeY;
 
         public delegate void UpdateChunkEventHandler(int chunkX, int chunkY);
         public event UpdateChunkEventHandler? UpdateChunk;
@@ -24,7 +25,6 @@ namespace Space
         public event UpdateRegionEventHandler? UpdateRegion;
 
         private ITileMap tileMap;
-        private readonly int chunkSizeX, chunkSizeY;
 
         public ChunkGrid(ITileMap tileMap, int chunkSizeX, int chunkSizeY)
         {
@@ -283,7 +283,8 @@ namespace Space
             return tilePositions;
         }
 
-        public Region GetOtherRegionFromLink(uint link, Region thisRegion) {
+        public Region GetOtherRegionFromLink(uint link, Region thisRegion)
+        {
             return linkCache[link].GetOtherRegion(thisRegion);
         }
 
