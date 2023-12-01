@@ -14,7 +14,7 @@ namespace Space.Navigation
 
         public readonly Stack<(int, int)> highLevelPath;
 
-        private readonly int endTileX, endTileY;
+        public readonly int endTileX, endTileY;
 
         private readonly ChunkGrid chunkGrid;
 
