@@ -28,7 +28,7 @@ namespace Space.Navigation
             localPath = new(chunkGrid.chunkSizeX + chunkGrid.chunkSizeY);
         }
 
-        public (int, int) GetNextTilePosition(int currentTileX, int currentTileY)
+        public (int, int)? GetNextTilePosition(int currentTileX, int currentTileY)
         {
             if (localPath.Count > 0 && localPath.Peek() == (currentTileX, currentTileY))
             {
@@ -48,6 +48,11 @@ namespace Space.Navigation
                 }
 
                 LocalAStarSearch((currentTileX, currentTileY), targetTile);
+            }
+
+            if (localPath.Count == 0)
+            {
+                return null;
             }
 
             return localPath.Peek();
