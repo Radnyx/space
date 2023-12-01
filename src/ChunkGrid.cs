@@ -68,6 +68,11 @@ namespace Space
             ConnectAdjacentRegions();
         }
 
+        public bool IsNavigableAt(int x, int y)
+        {
+            return tileMap.IsNavigable(x, y);
+        }
+
         public void AddTileAt(int x, int y)
         {
 #if DEBUG

@@ -14,10 +14,10 @@ namespace Space.Navigation
             this.chunkGrid = chunkGrid;
         }
 
-        public Path? FindPath(int startX, int startY, int endX, int endY)
+        public Path? FindPath(int startTileX, int startTileY, int endTileX, int endTileY)
         {
-            var startRegion = chunkGrid.GetRegionAt(startX, startY);
-            var endRegion = chunkGrid.GetRegionAt(endX, endY);
+            var startRegion = chunkGrid.GetRegionAt(startTileX, startTileY);
+            var endRegion = chunkGrid.GetRegionAt(endTileX, endTileY);
 
             if (startRegion == null || endRegion == null || startRegion.room != endRegion.room)
             {
@@ -26,13 +26,16 @@ namespace Space.Navigation
 
             return new Path(
                 chunkGrid,
-                HighLevelAStarSearch(startRegion, endRegion),
-                endX,
-                endY
+                HighLevelAStarSearch(startRegion, endRegion, startTileX, startTileY, endTileX, endTileY),
+                endTileX,
+                endTileY
             );
         }
 
-        private Queue<uint> HighLevelAStarSearch(Region startRegion, Region endRegion)
+        private Stack<(int, int)> HighLevelAStarSearch(
+            Region startRegion, Region endRegion,
+            int startTileX, int startTileY, int endTileX, int endTileY
+        )
         {
             var maxNodes = chunkGrid.xChunks * chunkGrid.yChunks;
             var openList = new FastPriorityQueue<RegionNode>(maxNodes);
@@ -50,7 +53,7 @@ namespace Space.Navigation
                 var currentRegion = current.region;
                 if (currentRegion == endRegion)
                 {
-                    return ReconstructHighLevelPath(cameFrom, endRegion);
+                    return ReconstructHighLevelPath(cameFrom, endRegion, startTileX, startTileY, endTileX, endTileY);
                 }
 
                 var links = current.region.links;
@@ -80,17 +83,88 @@ namespace Space.Navigation
             return Mathf.Sqrt(dx * dx + dy * dy);
         }
 
-        private Queue<uint> ReconstructHighLevelPath(Dictionary<Region, uint> cameFrom, Region endRegion)
+        private Stack<(int, int)> ReconstructHighLevelPath(
+            Dictionary<Region, uint> cameFrom, Region endRegion,
+            int startTileX, int startTileY, int endTileX, int endTileY
+        )
         {
-            var path = new Queue<uint>();
+            var lastCoords = (endTileX, endTileY);
+
+            var path = new Stack<(int, int)>();
             var current = endRegion;
-            while (!cameFrom.ContainsKey(current))
+            while (cameFrom.ContainsKey(current))
             {
                 var link = cameFrom[current];
-                path.Enqueue(link);
-                current = chunkGrid.GetOtherRegionFromLink(link, current);
+                var from = chunkGrid.GetOtherRegionFromLink(link, current);
+
+                (int, int) coords;
+                var linkData = new LinkData(link);
+                if (linkData.right)
+                {
+                    coords = GetRightLinkPoint(linkData, startTileX, startTileY, lastCoords);
+
+                    if (from.chunkX < current.chunkX)
+                    {
+                        coords.Item1 += 1;
+                    }
+                }
+                else
+                {
+                    coords = GetBottomLinkPoint(linkData, startTileX, startTileY, lastCoords);
+
+                    if (from.chunkY < current.chunkY)
+                    {
+                        coords.Item2 += 1;
+                    }
+                }
+
+                path.Push(coords);
+                current = from;
+
+                lastCoords = coords;
             }
             return path;
+        }
+
+        /*
+            Chooses a point along the link as our target. 
+            Shoots a ray from a high level target point to the starting position. Wherever the ray intersects
+            the previous link is that link's target. If the ray does not intersect the previous link, choose the 
+            nearest extremity of the link along its axis. If the ray to the starting point is facing the other direction, 
+            just pick the midpoint of the previous link.
+        */
+        private (int, int) GetRightLinkPoint(LinkData linkData, int startTileX, int startTileY, (int, int) lastCoords)
+        {
+            var (lastX, lastY) = lastCoords;
+            float dx = startTileX - lastX;
+            float dy = startTileY - lastY;
+
+            float t = (linkData.x - lastX) / dx;
+            if (t < 0)
+            {
+                return ((int)linkData.x, (int)(linkData.y + linkData.size / 2));
+            }
+
+            int yIntercept = Math.Clamp((int)Math.Round(lastY + t * dy), (int)linkData.y, (int)(linkData.y + linkData.size) - 1);
+
+            return ((int)linkData.x, yIntercept);
+        }
+
+        private (int, int) GetBottomLinkPoint(LinkData linkData, int startTileX, int startTileY, (int, int) lastCoords)
+        {
+            var (lastX, lastY) = lastCoords;
+            float dx = startTileX - lastX;
+            float dy = startTileY - lastY;
+
+            float t = (linkData.y - lastY) / dy;
+            if (t < 0)
+            {
+                return ((int)(linkData.x + linkData.size / 2), (int)linkData.y);
+            }
+
+            int xIntercept = Math.Clamp((int)Math.Round(lastX + t * dx), (int)linkData.x, (int)(linkData.x + linkData.size) - 1);
+
+            return (xIntercept, (int)linkData.y);
         }
 
         private class RegionNode : FastPriorityQueueNode

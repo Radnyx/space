@@ -10,27 +10,29 @@ namespace Space.Navigation
             (-1, 0), (1, 0), (0, -1), (0, 1)
         };
 
-        private Queue<(int, int)> localPath = new();
+        public readonly Stack<(int, int)> localPath;
 
-        private readonly Queue<uint> highLevelPath;
+        public readonly Stack<(int, int)> highLevelPath;
 
         private readonly int endTileX, endTileY;
 
         private readonly ChunkGrid chunkGrid;
 
-        public Path(ChunkGrid chunkGrid, Queue<uint> highLevelPath, int endTileX, int endTileY)
+        public Path(ChunkGrid chunkGrid, Stack<(int, int)> highLevelPath, int endTileX, int endTileY)
         {
             this.chunkGrid = chunkGrid;
             this.highLevelPath = highLevelPath;
             this.endTileX = endTileX;
             this.endTileY = endTileY;
+
+            localPath = new(chunkGrid.chunkSizeX + chunkGrid.chunkSizeY);
         }
 
         public (int, int) GetNextTilePosition(int currentTileX, int currentTileY)
         {
             if (localPath.Count > 0 && localPath.Peek() == (currentTileX, currentTileY))
             {
-                localPath.Dequeue();
+                localPath.Pop();
             }
 
             if (localPath.Count == 0)
@@ -38,8 +40,7 @@ namespace Space.Navigation
                 (int, int) targetTile;
                 if (highLevelPath.Count > 0)
                 {
-                    var link = highLevelPath.Dequeue();
-                    targetTile = GetTileFromLink(link);
+                    targetTile = highLevelPath.Pop();
                 }
                 else
                 {
@@ -54,10 +55,12 @@ namespace Space.Navigation
 
         private void LocalAStarSearch((int, int) startTile, (int, int) endTile)
         {
-            int chunkX = endTile.Item1 / chunkGrid.chunkSizeX;
-            int chunkY = endTile.Item2 / chunkGrid.chunkSizeY;
+            int startChunkX = startTile.Item1 / chunkGrid.chunkSizeX;
+            int startChunkY = startTile.Item2 / chunkGrid.chunkSizeY;
+            int endChunkX = endTile.Item1 / chunkGrid.chunkSizeX;
+            int endChunkY = endTile.Item2 / chunkGrid.chunkSizeY;
 
-            var maxNodes = chunkGrid.xChunks * chunkGrid.yChunks;
+            var maxNodes = 2 * chunkGrid.chunkSizeX * chunkGrid.chunkSizeY;
             var openList = new FastPriorityQueue<TileNode>(maxNodes);
             openList.Enqueue(new(startTile), 0f);
 
@@ -81,7 +84,13 @@ namespace Space.Navigation
                     // TODO: skip tiles not surrounded by enough tiles to fit the agent size
                     var otherTile = (currentTile.Item1 + directionX, currentTile.Item2 + directionY);
 
-                    if (!WithinChunk(chunkX, chunkY, otherTile)) continue;
+                    if (
+                        !chunkGrid.IsNavigableAt(otherTile.Item1, otherTile.Item2) ||
+                        (!WithinChunk(startChunkX, startChunkY, otherTile) && !WithinChunk(endChunkX, endChunkY, otherTile))
+                    )
+                    {
+                        continue;
+                    }
 
                     var cost = costs[currentTile] + 1;
                     if (!costs.ContainsKey(otherTile) || cost < costs[otherTile])
@@ -115,24 +124,12 @@ namespace Space.Navigation
         {
             localPath.Clear();
             var current = endTile;
-            while (!cameFrom.ContainsKey(current))
+            while (cameFrom.ContainsKey(current))
             {
-                var fromTile = cameFrom[current];
-                localPath.Enqueue(fromTile);
-                current = fromTile;
-            }
-        }
+                localPath.Push(current);
 
-        private (int, int) GetTileFromLink(uint link)
-        {
-            var linkData = new LinkData(link);
-            if (linkData.right)
-            {
-                return ((int)linkData.x + 1, (int)(linkData.y + linkData.size / 2));
-            }
-            else
-            {
-                return ((int)(linkData.x + linkData.size / 2), (int)linkData.y + 1);
+                var fromTile = cameFrom[current];
+                current = fromTile;
             }
         }
 
