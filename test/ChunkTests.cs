@@ -34,7 +34,9 @@ namespace SpaceTest
 
             public int GetWidth() => height;
 
-            public bool IsNavigable(int x, int y) => map[y * width + x] != '#';
+            public bool IsNavigable(int x, int y) => !IsOutOfBounds(x, y);
+
+            public bool IsOutOfBounds(int x, int y) => map[y * width + x] == '#';
         }
 
         private MockTileMap map1 = new(

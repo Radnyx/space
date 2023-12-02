@@ -204,7 +204,9 @@ namespace SpaceTest
 
             public int GetWidth() => w;
 
-            public bool IsNavigable(int x, int y) => map[y * w + x] != '#';
+            public bool IsNavigable(int x, int y) => !IsOutOfBounds(x, y);
+
+            public bool IsOutOfBounds(int x, int y) => map[y * w + x] == '#';
 
             public void SetTile(int x, int y, char c)
             {

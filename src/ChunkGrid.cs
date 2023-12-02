@@ -427,14 +427,14 @@ namespace Space
             bool onRightEdge = x >= tileMap.GetWidth() - 1 || (cantCrossEdges && chunkTileX == chunkSizeX - 1);
             bool onBottomEdge = y >= tileMap.GetHeight() - 1 || (cantCrossEdges && chunkTileY == chunkSizeY - 1);
 
-            bool a = onLeftEdge || onTopEdge || !tileMap.IsNavigable(x - 1, y - 1);
-            bool b = onTopEdge || !tileMap.IsNavigable(x, y - 1);
-            bool c = onRightEdge || onTopEdge || !tileMap.IsNavigable(x + 1, y - 1);
-            bool d = onLeftEdge || !tileMap.IsNavigable(x - 1, y);
-            bool f = onRightEdge || !tileMap.IsNavigable(x + 1, y);
-            bool g = onLeftEdge || onBottomEdge || !tileMap.IsNavigable(x - 1, y + 1);
-            bool h = onBottomEdge || !tileMap.IsNavigable(x, y + 1);
-            bool i = onRightEdge || onBottomEdge || !tileMap.IsNavigable(x + 1, y + 1);
+            bool a = onLeftEdge || onTopEdge || tileMap.IsOutOfBounds(x - 1, y - 1);
+            bool b = onTopEdge || tileMap.IsOutOfBounds(x, y - 1);
+            bool c = onRightEdge || onTopEdge || tileMap.IsOutOfBounds(x + 1, y - 1);
+            bool d = onLeftEdge || tileMap.IsOutOfBounds(x - 1, y);
+            bool f = onRightEdge || tileMap.IsOutOfBounds(x + 1, y);
+            bool g = onLeftEdge || onBottomEdge || tileMap.IsOutOfBounds(x - 1, y + 1);
+            bool h = onBottomEdge || tileMap.IsOutOfBounds(x, y + 1);
+            bool i = onRightEdge || onBottomEdge || tileMap.IsOutOfBounds(x + 1, y + 1);
 
             /**
                 Horrifying eldritch computer generated expression to quickly check the surrounding tiles. 

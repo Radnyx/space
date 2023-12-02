@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Godot;
 using Priority_Queue;
 
 namespace Space.Navigation
@@ -80,7 +79,7 @@ namespace Space.Navigation
         {
             float dx = endRegion.chunkX - fromRegion.chunkX;
             float dy = endRegion.chunkY - fromRegion.chunkY;
-            return Mathf.Sqrt(dx * dx + dy * dy);
+            return MathF.Sqrt(dx * dx + dy * dy);
         }
 
         private Stack<(int, int)> ReconstructHighLevelPath(

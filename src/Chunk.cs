@@ -342,7 +342,7 @@ namespace Space
         {
             return
                 x >= 0 && x < width && y >= 0 && y < height &&
-                tileMap.IsNavigable(topLeftX + x, topLeftY + y) &&
+                !tileMap.IsOutOfBounds(topLeftX + x, topLeftY + y) &&
                 regionTiles[x, y] == null;
         }
 
