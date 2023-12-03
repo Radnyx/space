@@ -106,6 +106,8 @@ namespace Space.Navigation
                     {
                         coords.Item1 += 1;
                     }
+
+                    coords = EnsureRightTilePositionIsNavigable(linkData, coords);
                 }
                 else
                 {
@@ -115,6 +117,8 @@ namespace Space.Navigation
                     {
                         coords.Item2 += 1;
                     }
+
+                    coords = EnsureBottomTilePositionIsNavigable(linkData, coords);
                 }
 
                 path.Push(coords);
@@ -164,6 +168,68 @@ namespace Space.Navigation
             int xIntercept = Math.Clamp((int)Math.Round(lastX + t * dx), (int)linkData.x, (int)(linkData.x + linkData.size) - 1);
 
             return (xIntercept, (int)linkData.y);
+        }
+
+        private (int, int) EnsureRightTilePositionIsNavigable(LinkData linkData, (int, int) coords)
+        {
+            // Player has placed a non-navigable tile here that belongs to a room?
+            if (!chunkGrid.IsNavigableAt(coords.Item1, coords.Item2))
+            {
+                // Pick closest point along the link.
+                for (int y = coords.Item2 + 1; y < linkData.y + linkData.size; y++)
+                {
+                    if (chunkGrid.IsNavigableAt(coords.Item1, y))
+                    {
+                        coords.Item2 = y;
+                        return coords;
+                    }
+                }
+
+                for (int y = coords.Item2 - 1; y >= linkData.y; y--)
+                {
+                    if (chunkGrid.IsNavigableAt(coords.Item1, y))
+                    {
+                        coords.Item2 = y;
+                        return coords;
+                    }
+                }
+            }
+
+            return coords;
+        }
+
+        private (int, int) EnsureBottomTilePositionIsNavigable(LinkData linkData, (int, int) coords)
+        {
+            // Player has placed a non-navigable tile here that belongs to a room?
+            if (!chunkGrid.IsNavigableAt(coords.Item1, coords.Item2))
+            {
+                // Pick closest point along the link.
+                if (!chunkGrid.IsNavigableAt(coords.Item1, coords.Item2))
+                {
+                    for (int x = coords.Item1 + 1; x < linkData.x + linkData.size; x++)
+                    {
+                        if (chunkGrid.IsNavigableAt(x, coords.Item2))
+                        {
+                            coords.Item1 = x;
+                            break;
+                        }
+                    }
+                }
+
+                if (!chunkGrid.IsNavigableAt(coords.Item1, coords.Item2))
+                {
+                    for (int x = coords.Item1 - 1; x >= linkData.x; x--)
+                    {
+                        if (chunkGrid.IsNavigableAt(x, coords.Item2))
+                        {
+                            coords.Item1 = x;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return coords;
         }
 
         private class RegionNode : FastPriorityQueueNode
