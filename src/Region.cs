@@ -2,23 +2,25 @@ using System.Collections.Generic;
 
 namespace Space
 {
-
-    public class Region
+    public class Region<K> : IRegion where K : notnull
     {
-        public readonly int chunkX, chunkY;
-
-        public Room room;
-
-        public readonly HashSet<uint> links;
-
+        public int chunkX { get; }
+        public int chunkY { get; }
         public int size { private set; get; }
+
+        public Room room { get; private set; }
+
+        public HashSet<uint> links { get; }
+
+        public Dictionary<K, HashSet<IEntity<K>>> entities { get; }
 
         public Region(int chunkX, int chunkY)
         {
             this.chunkX = chunkX;
             this.chunkY = chunkY;
             room = new Room();
-            links = new(4);
+            links = new(8);
+            entities = new();
         }
 
         public void IncrementSize()
@@ -38,17 +40,11 @@ namespace Space
             room.size--;
         }
 
-        public void ClearSize()
-        {
-            room.size -= size;
-            size = 0;
-        }
-
         /// <summary>
         /// All links in this region are removed from the <c>linkCache</c>,
         /// and removed from their associated regions.
         /// </summary>
-        public void ResetLinks(LinkCache linkCache)
+        public void ResetLinks(Dictionary<uint, LinkPair> linkCache)
         {
             foreach (var link in links)
             {
@@ -72,6 +68,37 @@ namespace Space
             Destroy();
             room = newRoom;
             room.size += size;
+        }
+
+        public void ResetRoom()
+        {
+            var oldSize = size;
+            room.size -= size;
+            size = 0;
+            room = new Room();
+            AddSize(oldSize);
+        }
+
+        public void AddEntity(K group, IEntity<K> entity)
+        {
+            HashSet<IEntity<K>> set;
+
+            if (!entities.ContainsKey(group))
+            {
+                set = new();
+                entities.Add(group, set);
+            }
+            else
+            {
+                set = entities[group];
+            }
+
+            set.Add(entity);
+        }
+
+        public void RemoveEntity(K group, IEntity<K> entity)
+        {
+            entities[group].Remove(entity);
         }
 
         public override string ToString()

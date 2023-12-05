@@ -16,9 +16,9 @@ namespace Space.Navigation
 
         public readonly int endTileX, endTileY;
 
-        private readonly ChunkGrid chunkGrid;
+        private readonly IChunkGrid chunkGrid;
 
-        public Path(ChunkGrid chunkGrid, Stack<(int, int)> highLevelPath, int endTileX, int endTileY)
+        public Path(IChunkGrid chunkGrid, Stack<(int, int)> highLevelPath, int endTileX, int endTileY)
         {
             this.chunkGrid = chunkGrid;
             this.highLevelPath = highLevelPath;

@@ -6,9 +6,9 @@ namespace Space.Navigation
 {
     public class Navigator
     {
-        private readonly ChunkGrid chunkGrid;
+        private readonly IChunkGrid chunkGrid;
 
-        public Navigator(ChunkGrid chunkGrid)
+        public Navigator(IChunkGrid chunkGrid)
         {
             this.chunkGrid = chunkGrid;
         }
@@ -32,7 +32,7 @@ namespace Space.Navigation
         }
 
         private Stack<(int, int)> HighLevelAStarSearch(
-            Region startRegion, Region endRegion,
+            IRegion startRegion, IRegion endRegion,
             int startTileX, int startTileY, int endTileX, int endTileY
         )
         {
@@ -41,9 +41,9 @@ namespace Space.Navigation
             openList.Enqueue(new(startRegion), 0f);
 
             // link a given region came from
-            var cameFrom = new Dictionary<Region, uint>();
+            var cameFrom = new Dictionary<IRegion, uint>();
 
-            var costs = new Dictionary<Region, float>();
+            var costs = new Dictionary<IRegion, float>();
             costs[startRegion] = 0f;
 
             while (openList.Count > 0)
@@ -75,7 +75,7 @@ namespace Space.Navigation
             throw new Exception($"Could not find path from {startRegion} to {endRegion}.");
         }
 
-        private float HighLevelHeuristic(Region fromRegion, Region endRegion)
+        private float HighLevelHeuristic(IRegion fromRegion, IRegion endRegion)
         {
             float dx = endRegion.chunkX - fromRegion.chunkX;
             float dy = endRegion.chunkY - fromRegion.chunkY;
@@ -83,7 +83,7 @@ namespace Space.Navigation
         }
 
         private Stack<(int, int)> ReconstructHighLevelPath(
-            Dictionary<Region, uint> cameFrom, Region endRegion,
+            Dictionary<IRegion, uint> cameFrom, IRegion endRegion,
             int startTileX, int startTileY, int endTileX, int endTileY
         )
         {
@@ -234,9 +234,9 @@ namespace Space.Navigation
 
         private class RegionNode : FastPriorityQueueNode
         {
-            public readonly Region region;
+            public readonly IRegion region;
 
-            public RegionNode(Region region)
+            public RegionNode(IRegion region)
             {
                 this.region = region;
             }

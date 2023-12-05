@@ -170,7 +170,7 @@ namespace SpaceTest
 
             public readonly List<char> map;
 
-            public ChunkGrid grid = null!;
+            public ChunkGrid<string> grid = null!;
 
             private readonly string mapString;
             private int w, h, cw, ch;
@@ -651,17 +651,17 @@ namespace SpaceTest
             }
         }
 
-        private HashSet<Region> GetAllRegions(MockTileMap map)
+        private HashSet<IRegion> GetAllRegions(MockTileMap map)
         {
-            HashSet<Region> regions = new();
+            HashSet<IRegion> regions = new();
             for (int x = 0; x < map.GetWidth(); x++)
             {
                 for (int y = 0; y < map.GetHeight(); y++)
                 {
-                    var room = map.grid.GetRegionAt(x, y);
-                    if (room != null)
+                    var region = map.grid.GetRegionAt(x, y);
+                    if (region != null)
                     {
-                        regions.Add(room);
+                        regions.Add(region);
                     }
                 }
             }

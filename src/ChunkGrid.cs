@@ -6,25 +6,29 @@ using Benchmarking;
 
 namespace Space
 {
-    public class ChunkGrid
+    public class ChunkGrid<K> : IChunkGrid where K : notnull
     {
         private const int TILE_MAP_MAX_WIDTH_AND_HEIGHT = 1 << 12;
         private const int CHUNK_MAX_WIDTH_AND_HEIGHT = 1 << 6;
         private const int REGION_BFS_QUEUE_CAPACITY = 64;
         private const int REGION_BFS_HASHSET_CAPACITY = 256;
 
-        public readonly Chunk[,] chunks;
-        public readonly LinkCache linkCache;
-        public readonly int xChunks, yChunks;
-        public readonly int chunkSizeX, chunkSizeY;
+        public readonly Chunk<K>[,] chunks;
+        public readonly Dictionary<uint, LinkPair> linkCache;
+        public int xChunks { get; }
+        public int yChunks { get; }
+        public int chunkSizeX { get; }
+        public int chunkSizeY { get; }
 
         public delegate void UpdateChunkEventHandler(int chunkX, int chunkY);
         public event UpdateChunkEventHandler? UpdateChunk;
 
-        public delegate void UpdateRegionEventHandler(Region region);
+        public delegate void UpdateRegionEventHandler(IRegion region);
         public event UpdateRegionEventHandler? UpdateRegion;
 
         private ITileMap tileMap;
+
+        private Dictionary<IEntity<K>, Region<K>> entityRegions;
 
         public ChunkGrid(ITileMap tileMap, int chunkSizeX, int chunkSizeY)
         {
@@ -52,13 +56,15 @@ namespace Space
 
             linkCache = new(4 * xChunks * yChunks);
 
-            chunks = new Chunk[xChunks, yChunks];
+            chunks = new Chunk<K>[xChunks, yChunks];
+
+            entityRegions = new(100);
 
             for (var x = 0; x < xChunks; x++)
             {
                 for (var y = 0; y < yChunks; y++)
                 {
-                    chunks[x, y] = new Chunk(
+                    chunks[x, y] = new Chunk<K>(
                         tileMap, linkCache,
                         x * chunkSizeX, y * chunkSizeY, chunkSizeX, chunkSizeY
                     );
@@ -136,7 +142,7 @@ namespace Space
             }
 
             // 3b. All other regions will proliferate their new rooms outward.
-            HashSet<Region> seen = new(REGION_BFS_HASHSET_CAPACITY);
+            HashSet<IRegion> seen = new(REGION_BFS_HASHSET_CAPACITY);
             for (int i = 1; i < chunk.regions.Count; i++)
             {
                 MergeRoomsBreadthFirst(chunk.regions[i], seen);
@@ -151,19 +157,17 @@ namespace Space
 
         private void RecalculateRegionsOverEdge(int x, int y)
         {
-            HashSet<Region> seen = new(REGION_BFS_HASHSET_CAPACITY);
+            HashSet<IRegion> seen = new(REGION_BFS_HASHSET_CAPACITY);
 
             var tilesPositionsOverEdge = GetTilePositionsOverEdge(x, y);
             foreach (var (overEdgeX, overEdgeY) in tilesPositionsOverEdge)
             {
-                var region = GetRegionAt(overEdgeX, overEdgeY);
+                var region = GetRegionAt(overEdgeX, overEdgeY) as Region<K>;
 
                 if (region == null) continue;
 
-                var oldSize = region.size;
-                region.ClearSize();
-                region.room = new Room();
-                region.AddSize(oldSize);
+                region.ResetRoom();
+
                 MergeRoomsBreadthFirst(region, seen);
             }
         }
@@ -228,7 +232,7 @@ namespace Space
         /// <returns>
         /// The region at the given tile coordinates.
         /// </returns>
-        public Region? GetRegionAt(int x, int y)
+        public IRegion? GetRegionAt(int x, int y)
         {
             if (x < 0 || y < 0 || x >= tileMap.GetWidth() || y >= tileMap.GetHeight())
             {
@@ -288,9 +292,51 @@ namespace Space
             return tilePositions;
         }
 
-        public Region GetOtherRegionFromLink(uint link, Region thisRegion)
+        public IRegion GetOtherRegionFromLink(uint link, IRegion thisRegion)
         {
             return linkCache[link].GetOtherRegion(thisRegion);
+        }
+
+        public void RegisterEntityToRegion(IEntity<K> entity, int x, int y)
+        {
+            var region = GetRegionAt(x, y) as Region<K>;
+            if (region == null)
+            {
+                return;
+            }
+
+            Region<K>? oldRegion = null;
+
+            if (entityRegions.ContainsKey(entity))
+            {
+                oldRegion = entityRegions[entity];
+            }
+
+            if (region != oldRegion)
+            {
+                foreach (var group in entity.GetGroups())
+                {
+                    oldRegion?.RemoveEntity(group, entity);
+                    region.AddEntity(group, entity);
+                }
+
+                entityRegions[entity] = region;
+            }
+        }
+
+        public void RemoveEntity(IEntity<K> entity)
+        {
+            if (entityRegions.ContainsKey(entity))
+            {
+                var region = entityRegions[entity];
+
+                foreach (var group in entity.GetGroups())
+                {
+                    region.RemoveEntity(group, entity);
+                }
+
+                entityRegions.Remove(entity);
+            }
         }
 
         private void RecalculateLinksForChunk(int x, int y)
@@ -314,7 +360,7 @@ namespace Space
             }
         }
 
-        private void MergeRoomFromOutside(Region firstRegion)
+        private void MergeRoomFromOutside(IRegion firstRegion)
         {
             if (firstRegion.links.Count == 0)
             {
@@ -324,13 +370,13 @@ namespace Space
             firstRegion.ReplaceRoom(otherRegion.room);
         }
 
-        private void MergeRoomsBreadthFirst(Region region, HashSet<Region> seen)
+        private void MergeRoomsBreadthFirst(IRegion region, HashSet<IRegion> seen)
         {
             // TODO: Could try priority queue and try to merge with regions
             // closest to our original chunk, increasing the likelihood that we
             // can stop early (i.e., no new room has been created).
 
-            Queue<Region> queue = new(REGION_BFS_QUEUE_CAPACITY);
+            Queue<IRegion> queue = new(REGION_BFS_QUEUE_CAPACITY);
             queue.Enqueue(region);
 
             while (queue.Count > 0)
@@ -460,6 +506,6 @@ namespace Space
                 (!f && g && !h && i);
         }
 
-        private static int RoomSize(Region r) => r.room.size;
+        private static int RoomSize(IRegion r) => r.room.size;
     }
 }

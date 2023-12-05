@@ -179,8 +179,8 @@ namespace SpaceTest
         public void CreatesLinksRight()
         {
             Dictionary<System.UInt32, LinkPair> linkCache = new();
-            Chunk chunk1 = new(mapLinkRight, linkCache, 0, 0, 4, 10);
-            Chunk chunk2 = new(mapLinkRight, linkCache, 4, 0, 4, 10);
+            Chunk<string> chunk1 = new(mapLinkRight, linkCache, 0, 0, 4, 10);
+            Chunk<string> chunk2 = new(mapLinkRight, linkCache, 4, 0, 4, 10);
             chunk1.RecalculateLinksRight(chunk2);
 
             Assert.Equal(4, linkCache.Count);
@@ -207,10 +207,10 @@ namespace SpaceTest
         public void CreatesLinksDown()
         {
             Dictionary<System.UInt32, LinkPair> linkCache = new();
-            Chunk chunk1 = new(mapLinkDown, linkCache, 0, 0, 5, 2);
-            Chunk chunk2 = new(mapLinkDown, linkCache, 5, 0, 5, 2);
-            Chunk chunk3 = new(mapLinkDown, linkCache, 0, 2, 5, 2);
-            Chunk chunk4 = new(mapLinkDown, linkCache, 5, 2, 5, 2);
+            Chunk<string> chunk1 = new(mapLinkDown, linkCache, 0, 0, 5, 2);
+            Chunk<string> chunk2 = new(mapLinkDown, linkCache, 5, 0, 5, 2);
+            Chunk<string> chunk3 = new(mapLinkDown, linkCache, 0, 2, 5, 2);
+            Chunk<string> chunk4 = new(mapLinkDown, linkCache, 5, 2, 5, 2);
             chunk1.RecalculateLinksDown(chunk3);
             chunk2.RecalculateLinksDown(chunk4);
 
@@ -238,8 +238,8 @@ namespace SpaceTest
         public void CreatesLinksDown2()
         {
             Dictionary<System.UInt32, LinkPair> linkCache = new();
-            Chunk chunk1 = new(mapLinkDown2, linkCache, 0, 0, 4, 4);
-            Chunk chunk2 = new(mapLinkDown2, linkCache, 0, 4, 4, 4);
+            Chunk<string> chunk1 = new(mapLinkDown2, linkCache, 0, 0, 4, 4);
+            Chunk<string> chunk2 = new(mapLinkDown2, linkCache, 0, 4, 4, 4);
             chunk1.RecalculateLinksDown(chunk2);
 
             Assert.Single(linkCache);
@@ -252,7 +252,7 @@ namespace SpaceTest
 
         private void ValidateMap(MockTileMap map, int[] sizes)
         {
-            Chunk chunk = new(map, new(), 0, 0, 4, 4);
+            Chunk<string> chunk = new(map, new(), 0, 0, 4, 4);
 
             HashSet<Room?>[] rooms = new HashSet<Room?>[sizes.Length];
             for (var i = 0; i < rooms.Length; i++)

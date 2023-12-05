@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Space
 {
-    public class Chunk
+    public class Chunk<K> : IChunk where K : notnull
     {
         private struct FloodFillPointer
         {
@@ -19,16 +19,19 @@ namespace Space
 
         public readonly int topLeftX, topLeftY;
 
-        public readonly Region?[,] regionTiles;
+        public readonly IRegion?[,] regionTiles;
 
-        public List<Region> regions { private set; get; }
+        public List<IRegion> regions { private set; get; }
 
         private readonly ITileMap tileMap;
-        private readonly LinkCache linkCache;
+        private readonly Dictionary<uint, LinkPair> linkCache;
 
         private readonly int width, height;
 
-        public Chunk(ITileMap tileMap, LinkCache linkCache, int topLeftX, int topLeftY, int width, int height)
+        public Chunk(
+            ITileMap tileMap, Dictionary<uint, LinkPair> linkCache,
+            int topLeftX, int topLeftY, int width, int height
+            )
         {
             this.tileMap = tileMap;
             this.linkCache = linkCache;
@@ -37,7 +40,7 @@ namespace Space
             this.width = width;
             this.height = height;
 
-            regionTiles = new Region?[width, height];
+            regionTiles = new Region<K>?[width, height];
             regions = new(width);
 
             RecalculateRegions();
@@ -49,7 +52,7 @@ namespace Space
         /// All tiles belonging to the <c>original</c> region will now belong to the <c>other</c>, 
         /// destroying the original region and adding the original's size to the other's room.
         /// </summary>
-        public void ReplaceRegion(Region original, Region other)
+        public void ReplaceRegion(IRegion original, IRegion other)
         {
             if (original == other) return;
 
@@ -70,12 +73,12 @@ namespace Space
             }
         }
 
-        public void RecalculateLinksRight(Chunk other)
+        public void RecalculateLinksRight(Chunk<K> other)
         {
             int startLinkY = 0;
             uint currentLinkSize = 0;
-            Region? lastThisRegion = null;
-            Region? lastOtherRegion = null;
+            IRegion? lastThisRegion = null;
+            IRegion? lastOtherRegion = null;
             for (int y = 0; y < height; y++)
             {
                 var thisRegion = regionTiles[width - 1, y];
@@ -124,12 +127,12 @@ namespace Space
             }
         }
 
-        public void RecalculateLinksDown(Chunk other)
+        public void RecalculateLinksDown(Chunk<K> other)
         {
             int startLinkX = 0;
             uint currentLinkSize = 0;
-            Region? lastThisRegion = null;
-            Region? lastOtherRegion = null;
+            IRegion? lastThisRegion = null;
+            IRegion? lastOtherRegion = null;
             for (int x = 0; x < width; x++)
             {
                 var thisRegion = regionTiles[x, height - 1];
@@ -179,7 +182,7 @@ namespace Space
             }
         }
 
-        private void AddLink(Region r1, Region r2, int x, int y, uint size, bool direction)
+        private void AddLink(IRegion r1, IRegion r2, int x, int y, uint size, bool direction)
         {
             var link = LinkUtils.Hash((uint)x, (uint)y, size, direction);
 
@@ -228,18 +231,18 @@ namespace Space
             }
         }
 
-        public Region CreateNewRegion(int x, int y)
+        public IRegion CreateNewRegion(int x, int y)
         {
-            var region = new Region(GetChunkX(), GetChunkY());
+            var region = new Region<K>(GetChunkX(), GetChunkY());
             regions.Add(region);
             region.IncrementSize();
             regionTiles[x, y] = region;
             return region;
         }
 
-        public HashSet<Region> GetRegionsAdjacentTo(int x, int y)
+        public HashSet<IRegion> GetRegionsAdjacentTo(int x, int y)
         {
-            HashSet<Region> regions = new(4);
+            HashSet<IRegion> regions = new(4);
 
             if (x > 0)
             {
@@ -275,7 +278,7 @@ namespace Space
                 return;
             }
 
-            Region? region = null;
+            IRegion? region = null;
 
             Stack<FloodFillPointer> s = new(width);
             s.Push(new FloodFillPointer(startX, startX, startY, 1));
@@ -291,7 +294,7 @@ namespace Space
                     {
                         if (region == null)
                         {
-                            region = new Region(GetChunkX(), GetChunkY());
+                            region = new Region<K>(GetChunkX(), GetChunkY());
                             regions.Add(region);
                         }
 
@@ -312,7 +315,7 @@ namespace Space
                     {
                         if (region == null)
                         {
-                            region = new Region(GetChunkX(), GetChunkY());
+                            region = new Region<K>(GetChunkX(), GetChunkY());
                             regions.Add(region);
                         }
 

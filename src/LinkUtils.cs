@@ -1,5 +1,3 @@
-global using LinkCache = System.Collections.Generic.Dictionary<uint, Space.LinkPair>;
-
 namespace Space
 {
     public struct LinkData
@@ -18,9 +16,9 @@ namespace Space
 
     public struct LinkPair
     {
-        public readonly Region r1, r2;
+        public readonly IRegion r1, r2;
 
-        public LinkPair(Region r1, Region r2)
+        public LinkPair(IRegion r1, IRegion r2)
         {
             this.r1 = r1;
             this.r2 = r2;
@@ -42,7 +40,7 @@ namespace Space
             return link;
         }
 
-        public static Region GetOtherRegion(this LinkPair link, Region region)
+        public static IRegion GetOtherRegion(this LinkPair link, IRegion region)
         {
             if (link.r1 == region)
             {
