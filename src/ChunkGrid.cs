@@ -297,9 +297,9 @@ namespace Space
             return linkCache[link].GetOtherRegion(thisRegion);
         }
 
-        public void RegisterEntityToRegion(IEntity<K> entity, int x, int y)
+        public void RegisterEntityToRegion(IEntity<K> entity, int tileX, int tileY)
         {
-            var region = GetRegionAt(x, y) as Region<K>;
+            var region = GetRegionAt(tileX, tileY) as Region<K>;
             if (region == null)
             {
                 return;
@@ -339,6 +339,52 @@ namespace Space
             }
         }
 
+        public HashSet<IEntity<K>>? FindClosestEntitiesByRegion(K group, int tileX, int tileY)
+        {
+            const int MAX_ITERATIONS = 32;
+
+            HashSet<IRegion> seen = new(REGION_BFS_HASHSET_CAPACITY);
+            Queue<IRegion> queue = new(REGION_BFS_QUEUE_CAPACITY);
+
+            var region = GetRegionAt(tileX, tileY);
+            if (region == null)
+            {
+                return null;
+            }
+
+            queue.Enqueue(region);
+
+            int iterations = 0;
+            while (queue.Count > 0 && iterations < MAX_ITERATIONS)
+            {
+                var r = queue.Dequeue();
+
+                foreach (var link in r.links)
+                {
+                    var linkPair = linkCache[link];
+                    Region<K> otherRegion = (Region<K>)linkPair.GetOtherRegion(r);
+
+                    if (seen.Contains(otherRegion)) continue;
+
+                    if (otherRegion.entities.ContainsKey(group))
+                    {
+                        var entities = otherRegion.entities[group];
+                        if (entities.Count > 0)
+                        {
+                            return entities;
+                        }
+                    }
+
+                    queue.Enqueue(otherRegion);
+                    seen.Add(otherRegion);
+                }
+
+                iterations++;
+            }
+
+            return null;
+        }
+
         private void RecalculateLinksForChunk(int x, int y)
         {
             var currentChunk = chunks[x, y];
@@ -372,10 +418,6 @@ namespace Space
 
         private void MergeRoomsBreadthFirst(IRegion region, HashSet<IRegion> seen)
         {
-            // TODO: Could try priority queue and try to merge with regions
-            // closest to our original chunk, increasing the likelihood that we
-            // can stop early (i.e., no new room has been created).
-
             Queue<IRegion> queue = new(REGION_BFS_QUEUE_CAPACITY);
             queue.Enqueue(region);
 
