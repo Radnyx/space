@@ -664,23 +664,44 @@ namespace SpaceTest
             grid.RegisterEntityToRegion(entity2, 1, 3);
             grid.RegisterEntityToRegion(entity3, 6, 1);
 
-            var entities1 = grid.FindClosestEntitiesByRegion("group1", 7, 7)!;
-            var entities1Empty = grid.FindClosestEntitiesByRegion("group1", 6, 2);
+            var entities1 = grid.FindClosestEntitiesTo("group1", 7, 7)!;
+            var entities1Empty = grid.FindClosestEntitiesTo("group1", 6, 2);
             Assert.Contains(entity1, entities1);
             Assert.Contains(entity2, entities1);
             Assert.DoesNotContain(entity3, entities1);
             Assert.Null(entities1Empty);
 
-            var entities2 = grid.FindClosestEntitiesByRegion("group2", 7, 7)!;
+            var entities2 = grid.FindClosestEntitiesTo("group2", 7, 7)!;
             Assert.Contains(entity1, entities2);
             Assert.DoesNotContain(entity2, entities2);
             Assert.DoesNotContain(entity3, entities2);
 
-            var entities2Other = grid.FindClosestEntitiesByRegion("group2", 5, 4)!;
-            var entities3 = grid.FindClosestEntitiesByRegion("group3", 5, 4)!;
+            var entities2Other = grid.FindClosestEntitiesTo("group2", 5, 4)!;
+            var entities3 = grid.FindClosestEntitiesTo("group3", 5, 4)!;
             Assert.Equal(entities2Other, entities3);
             Assert.Single(entities3);
             Assert.Contains(entity3, entities3);
+
+            var room1EntitiesGroup1 = grid.GetEntitiesInRoomAt("group1", 0, 0)!;
+            var room1EntitiesGroup2 = grid.GetEntitiesInRoomAt("group2", 0, 0)!;
+            var room2EntitiesGroup2 = grid.GetEntitiesInRoomAt("group2", 4, 0)!;
+            var room2EntitiesGroup3 = grid.GetEntitiesInRoomAt("group3", 4, 0)!;
+
+            Assert.Contains(entity1, room1EntitiesGroup1);
+            Assert.Contains(entity2, room1EntitiesGroup1);
+            Assert.DoesNotContain(entity3, room1EntitiesGroup1);
+
+            Assert.Contains(entity1, room1EntitiesGroup2);
+            Assert.DoesNotContain(entity2, room1EntitiesGroup2);
+            Assert.DoesNotContain(entity3, room1EntitiesGroup2);
+
+            Assert.DoesNotContain(entity1, room2EntitiesGroup2);
+            Assert.DoesNotContain(entity2, room2EntitiesGroup2);
+            Assert.Contains(entity3, room2EntitiesGroup2);
+
+            Assert.DoesNotContain(entity1, room2EntitiesGroup3);
+            Assert.DoesNotContain(entity2, room2EntitiesGroup3);
+            Assert.Contains(entity3, room2EntitiesGroup3);
         }
 
         [Fact]
@@ -702,12 +723,22 @@ namespace SpaceTest
             grid.RemoveEntity(entity2);
             grid.RemoveEntity(entity3);
 
-            var entities1 = grid.FindClosestEntitiesByRegion("group1", 7, 7);
-            var entities2 = grid.FindClosestEntitiesByRegion("group2", 7, 7);
-            var entities3 = grid.FindClosestEntitiesByRegion("group3", 5, 4);
+            var entities1 = grid.FindClosestEntitiesTo("group1", 7, 7);
+            var entities2 = grid.FindClosestEntitiesTo("group2", 7, 7);
+            var entities3 = grid.FindClosestEntitiesTo("group3", 5, 4);
             Assert.Null(entities1);
             Assert.Null(entities2);
             Assert.Null(entities3);
+
+            var room1EntitiesGroup1 = grid.GetEntitiesInRoomAt("group1", 0, 0);
+            var room1EntitiesGroup2 = grid.GetEntitiesInRoomAt("group2", 0, 0);
+            var room2EntitiesGroup2 = grid.GetEntitiesInRoomAt("group2", 4, 0);
+            var room2EntitiesGroup3 = grid.GetEntitiesInRoomAt("group3", 4, 0);
+
+            Assert.Null(room1EntitiesGroup1);
+            Assert.Null(room1EntitiesGroup2);
+            Assert.Null(room2EntitiesGroup2);
+            Assert.Null(room2EntitiesGroup3);
         }
 
         [Fact]
@@ -727,10 +758,10 @@ namespace SpaceTest
 
             grid.RegisterEntityToRegion(entity1, 4, 0);
 
-            var entities1 = grid.FindClosestEntitiesByRegion("group1", 7, 7)!;
-            var entities2 = grid.FindClosestEntitiesByRegion("group2", 7, 7);
-            var entities3 = grid.FindClosestEntitiesByRegion("group3", 5, 4)!;
-            var entities2Other = grid.FindClosestEntitiesByRegion("group2", 7, 4);
+            var entities1 = grid.FindClosestEntitiesTo("group1", 7, 7)!;
+            var entities2 = grid.FindClosestEntitiesTo("group2", 7, 7);
+            var entities3 = grid.FindClosestEntitiesTo("group3", 5, 4)!;
+            var entities2Other = grid.FindClosestEntitiesTo("group2", 7, 4)!;
             Assert.Contains(entity2, entities1);
             Assert.Single(entities1);
 
@@ -742,11 +773,59 @@ namespace SpaceTest
             Assert.Equal(2, entities2Other.Count);
             Assert.Contains(entity1, entities2Other);
             Assert.Contains(entity3, entities2Other);
+
+            var room1EntitiesGroup1 = grid.GetEntitiesInRoomAt("group1", 0, 0)!;
+            var room1EntitiesGroup2 = grid.GetEntitiesInRoomAt("group2", 0, 0);
+            var room2EntitiesGroup2 = grid.GetEntitiesInRoomAt("group2", 4, 0)!;
+            var room2EntitiesGroup3 = grid.GetEntitiesInRoomAt("group3", 4, 0)!;
+
+            Assert.DoesNotContain(entity1, room1EntitiesGroup1);
+            Assert.Contains(entity2, room1EntitiesGroup1);
+            Assert.DoesNotContain(entity3, room1EntitiesGroup1);
+
+            Assert.Null(room1EntitiesGroup2);
+
+            Assert.Contains(entity1, room2EntitiesGroup2);
+            Assert.DoesNotContain(entity2, room2EntitiesGroup2);
+            Assert.Contains(entity3, room2EntitiesGroup2);
+
+            Assert.DoesNotContain(entity1, room2EntitiesGroup3);
+            Assert.DoesNotContain(entity2, room2EntitiesGroup3);
+            Assert.Contains(entity3, room2EntitiesGroup3);
+        }
+
+        [Fact]
+        public void AddingAndRemovingTileUpdatesEntities()
+        {
+            var mockTileMap = new MockTileMap();
+            mockTileMap.OnReady();
+            var grid = mockTileMap.grid;
+            var links = mockTileMap.grid.linkCache;
+
+            var entity1 = new MockEntity(new() { "group1" });
+            var entity2 = new MockEntity(new() { "group1" });
+            grid.RegisterEntityToRegion(entity1, 0, 0);
+            grid.RegisterEntityToRegion(entity2, 7, 7);
+
+            mockTileMap.SetTile(0, 7, '#');
+
+            var room1Entities = grid.GetEntitiesInRoomAt("group1", 0, 0)!;
+            var room2Entities = grid.GetEntitiesInRoomAt("group1", 7, 7)!;
+            Assert.Single(room1Entities);
+            Assert.Single(room2Entities);
+            Assert.Contains(entity1, room1Entities);
+            Assert.Contains(entity2, room2Entities);
+
+            mockTileMap.SetTile(0, 7, '.');
+
+            var roomEntities = grid.GetEntitiesInRoomAt("group1", 0, 0)!;
+            Assert.Contains(entity1, roomEntities);
+            Assert.Contains(entity2, roomEntities);
         }
 
         private void AssertRegionsSumToRooms(MockTileMap map)
         {
-            Dictionary<Room, int> totals = new();
+            Dictionary<IRoom, int> totals = new();
             var regions = GetAllRegions(map);
             foreach (var region in regions)
             {
@@ -781,7 +860,7 @@ namespace SpaceTest
 
         private int CountRooms(MockTileMap map)
         {
-            HashSet<Room> rooms = new();
+            HashSet<IRoom> rooms = new();
             for (int x = 0; x < map.GetWidth(); x++)
             {
                 for (int y = 0; y < map.GetHeight(); y++)
@@ -798,7 +877,7 @@ namespace SpaceTest
 
         private void ValidateMap(MockTileMap map, string expectedRooms, int[] sizes)
         {
-            HashSet<Room?>[] rooms = new HashSet<Room?>[sizes.Length];
+            HashSet<IRoom?>[] rooms = new HashSet<IRoom?>[sizes.Length];
             for (var i = 0; i < rooms.Length; i++)
             {
                 rooms[i] = new();

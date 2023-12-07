@@ -254,7 +254,7 @@ namespace SpaceTest
         {
             Chunk<string> chunk = new(map, new(), 0, 0, 4, 4);
 
-            HashSet<Room?>[] rooms = new HashSet<Room?>[sizes.Length];
+            HashSet<IRoom?>[] rooms = new HashSet<IRoom?>[sizes.Length];
             for (var i = 0; i < rooms.Length; i++)
             {
                 rooms[i] = new();

@@ -9,7 +9,7 @@ namespace Space
         public int chunkY { get; }
         public int size { get; }
 
-        public Room room { get; }
+        public IRoom room { get; }
 
         HashSet<uint> links { get; }
 
@@ -18,7 +18,7 @@ namespace Space
         void AddSize(int size);
         void Destroy();
 
-        void ReplaceRoom(Room room);
+        void ReplaceRoom(IRoom room);
 
         void ResetLinks(Dictionary<uint, LinkPair> linkCache);
     }

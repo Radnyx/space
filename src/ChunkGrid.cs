@@ -12,6 +12,7 @@ namespace Space
         private const int CHUNK_MAX_WIDTH_AND_HEIGHT = 1 << 6;
         private const int REGION_BFS_QUEUE_CAPACITY = 64;
         private const int REGION_BFS_HASHSET_CAPACITY = 256;
+        private const int FIND_ENTITIES_MAX_ITERATIONS = 32;
 
         public readonly Chunk<K>[,] chunks;
         public readonly Dictionary<uint, LinkPair> linkCache;
@@ -227,7 +228,7 @@ namespace Space
         /// <returns>
         /// The room at the given tile coordinates.
         /// </returns>
-        public Room? GetRoomAt(int x, int y) => GetRegionAt(x, y)?.room;
+        public IRoom? GetRoomAt(int x, int y) => GetRegionAt(x, y)?.room;
 
         /// <returns>
         /// The region at the given tile coordinates.
@@ -339,10 +340,44 @@ namespace Space
             }
         }
 
-        public HashSet<IEntity<K>>? FindClosestEntitiesByRegion(K group, int tileX, int tileY)
+        /// <summary>
+        /// Finds entities in the room at the given <c>tileX</c> and <c>tileY</c>.
+        /// </summary>
+        /// <returns>All entities of a given <c>group</c> inhabiting the room. Null if no entities are found.</returns>
+        /// <remarks>O(1)</remarks>
+        public HashSet<IEntity<K>>? GetEntitiesInRoomAt(K group, int tileX, int tileY)
         {
-            const int MAX_ITERATIONS = 32;
+            var region = GetRegionAt(tileX, tileY);
+            if (region == null)
+            {
+                return null;
+            }
 
+            var entities = ((Room<K>)region.room).entities;
+
+            if (entities.ContainsKey(group))
+            {
+                var result = entities[group];
+                if (result.Count == 0)
+                {
+                    return null;
+                }
+
+                return result;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the closest region containing entities of the given <c>group</c>.
+        /// </summary>
+        /// <param name="tileX">X position in grid to start searching.</param>
+        /// <param name="tileY">Y position in grid to start searching.</param>
+        /// <returns>Set of entities belonging to the closest populated region. Null if no entities are found.</returns>
+        /// <remarks>Runs in constant time limited by <c>MAX_ITERATIONS</c>.</remarks>
+        public HashSet<IEntity<K>>? FindClosestEntitiesTo(K group, int tileX, int tileY)
+        {
             HashSet<IRegion> seen = new(REGION_BFS_HASHSET_CAPACITY);
             Queue<IRegion> queue = new(REGION_BFS_QUEUE_CAPACITY);
 
@@ -355,7 +390,7 @@ namespace Space
             queue.Enqueue(region);
 
             int iterations = 0;
-            while (queue.Count > 0 && iterations < MAX_ITERATIONS)
+            while (queue.Count > 0 && iterations < FIND_ENTITIES_MAX_ITERATIONS)
             {
                 var r = queue.Dequeue();
 
@@ -460,7 +495,7 @@ namespace Space
                 }
             }
 
-            var rooms = new HashSet<Room>();
+            var rooms = new HashSet<IRoom>();
 
             for (var x = 0; x < xChunks; x++)
             {

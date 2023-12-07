@@ -8,17 +8,17 @@ namespace Space
         public int chunkY { get; }
         public int size { private set; get; }
 
-        public Room room { get; private set; }
+        public IRoom room { get; private set; }
 
         public HashSet<uint> links { get; }
 
-        public Dictionary<K, HashSet<IEntity<K>>> entities { get; }
+        public readonly Dictionary<K, HashSet<IEntity<K>>> entities;
 
         public Region(int chunkX, int chunkY)
         {
             this.chunkX = chunkX;
             this.chunkY = chunkY;
-            room = new Room();
+            room = new Room<K>();
             links = new(8);
             entities = new();
         }
@@ -61,13 +61,29 @@ namespace Space
         public void Destroy()
         {
             room.size -= size;
+
+            foreach (var (group, set) in entities)
+            {
+                foreach (var entity in set)
+                {
+                    ((Room<K>)room).RemoveEntity(group, entity);
+                }
+            }
         }
 
-        public void ReplaceRoom(Room newRoom)
+        public void ReplaceRoom(IRoom newRoom)
         {
             Destroy();
             room = newRoom;
             room.size += size;
+
+            foreach (var (group, set) in entities)
+            {
+                foreach (var entity in set)
+                {
+                    ((Room<K>)room).AddEntity(group, entity);
+                }
+            }
         }
 
         public void ResetRoom()
@@ -75,7 +91,7 @@ namespace Space
             var oldSize = size;
             room.size -= size;
             size = 0;
-            room = new Room();
+            room = new Room<K>();
             AddSize(oldSize);
         }
 
@@ -94,11 +110,15 @@ namespace Space
             }
 
             set.Add(entity);
+
+            ((Room<K>)room).AddEntity(group, entity);
         }
 
         public void RemoveEntity(K group, IEntity<K> entity)
         {
             entities[group].Remove(entity);
+
+            ((Room<K>)room).RemoveEntity(group, entity);
         }
 
         public override string ToString()
