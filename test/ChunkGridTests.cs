@@ -165,6 +165,22 @@ namespace SpaceTest
             (15, 12),(3, 13),(8, 3),(10, 10),(9, 6),(4, 11),(6, 0),(3, 11),(4, 1),(0, 7),(14, 10),(6, 13),(8, 7),(12, 11),(9, 2),(4, 10)
         };
 
+        private static int mockEntityIDs = 0;
+
+        private class MockEntity : IEntity<string>
+        {
+            public int id = mockEntityIDs++;
+
+            public List<string> groups;
+
+            public MockEntity(List<string> groups)
+            {
+                this.groups = groups;
+            }
+
+            public IEnumerable<string> GetGroups() => groups;
+        }
+
         private class MockTileMap : ITileMap
         {
 
@@ -631,6 +647,101 @@ namespace SpaceTest
             var newRoomId = mockTileMap.grid.GetRegionAt(8, 2);
 
             Assert.Equal(originalRoomID, newRoomId);
+        }
+
+        [Fact]
+        public void AddsEntitiesToRegionStorage()
+        {
+            var mockTileMap = new MockTileMap();
+            mockTileMap.OnReady();
+            var grid = mockTileMap.grid;
+            var links = mockTileMap.grid.linkCache;
+
+            var entity1 = new MockEntity(new() { "group1", "group2" });
+            var entity2 = new MockEntity(new() { "group1" });
+            var entity3 = new MockEntity(new() { "group2", "group3" });
+            grid.RegisterEntityToRegion(entity1, 0, 0);
+            grid.RegisterEntityToRegion(entity2, 1, 3);
+            grid.RegisterEntityToRegion(entity3, 6, 1);
+
+            var entities1 = grid.FindClosestEntitiesByRegion("group1", 7, 7)!;
+            var entities1Empty = grid.FindClosestEntitiesByRegion("group1", 6, 2);
+            Assert.Contains(entity1, entities1);
+            Assert.Contains(entity2, entities1);
+            Assert.DoesNotContain(entity3, entities1);
+            Assert.Null(entities1Empty);
+
+            var entities2 = grid.FindClosestEntitiesByRegion("group2", 7, 7)!;
+            Assert.Contains(entity1, entities2);
+            Assert.DoesNotContain(entity2, entities2);
+            Assert.DoesNotContain(entity3, entities2);
+
+            var entities2Other = grid.FindClosestEntitiesByRegion("group2", 5, 4)!;
+            var entities3 = grid.FindClosestEntitiesByRegion("group3", 5, 4)!;
+            Assert.Equal(entities2Other, entities3);
+            Assert.Single(entities3);
+            Assert.Contains(entity3, entities3);
+        }
+
+        [Fact]
+        public void RemovesEntitiesFromRegionStorage()
+        {
+            var mockTileMap = new MockTileMap();
+            mockTileMap.OnReady();
+            var grid = mockTileMap.grid;
+            var links = mockTileMap.grid.linkCache;
+
+            var entity1 = new MockEntity(new() { "group1", "group2" });
+            var entity2 = new MockEntity(new() { "group1" });
+            var entity3 = new MockEntity(new() { "group2", "group3" });
+            grid.RegisterEntityToRegion(entity1, 0, 0);
+            grid.RegisterEntityToRegion(entity2, 1, 3);
+            grid.RegisterEntityToRegion(entity3, 6, 1);
+
+            grid.RemoveEntity(entity1);
+            grid.RemoveEntity(entity2);
+            grid.RemoveEntity(entity3);
+
+            var entities1 = grid.FindClosestEntitiesByRegion("group1", 7, 7);
+            var entities2 = grid.FindClosestEntitiesByRegion("group2", 7, 7);
+            var entities3 = grid.FindClosestEntitiesByRegion("group3", 5, 4);
+            Assert.Null(entities1);
+            Assert.Null(entities2);
+            Assert.Null(entities3);
+        }
+
+        [Fact]
+        public void OverridesEntityStorage()
+        {
+            var mockTileMap = new MockTileMap();
+            mockTileMap.OnReady();
+            var grid = mockTileMap.grid;
+            var links = mockTileMap.grid.linkCache;
+
+            var entity1 = new MockEntity(new() { "group1", "group2" });
+            var entity2 = new MockEntity(new() { "group1" });
+            var entity3 = new MockEntity(new() { "group2", "group3" });
+            grid.RegisterEntityToRegion(entity1, 0, 0);
+            grid.RegisterEntityToRegion(entity2, 1, 3);
+            grid.RegisterEntityToRegion(entity3, 6, 1);
+
+            grid.RegisterEntityToRegion(entity1, 4, 0);
+
+            var entities1 = grid.FindClosestEntitiesByRegion("group1", 7, 7)!;
+            var entities2 = grid.FindClosestEntitiesByRegion("group2", 7, 7);
+            var entities3 = grid.FindClosestEntitiesByRegion("group3", 5, 4)!;
+            var entities2Other = grid.FindClosestEntitiesByRegion("group2", 7, 4);
+            Assert.Contains(entity2, entities1);
+            Assert.Single(entities1);
+
+            Assert.Null(entities2);
+
+            Assert.Single(entities3);
+            Assert.Contains(entity3, entities3);
+
+            Assert.Equal(2, entities2Other.Count);
+            Assert.Contains(entity1, entities2Other);
+            Assert.Contains(entity3, entities2Other);
         }
 
         private void AssertRegionsSumToRooms(MockTileMap map)
