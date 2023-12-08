@@ -38,7 +38,10 @@ namespace Space
 
         public void RemoveEntity(K group, IEntity<K> entity)
         {
-            entities[group].Remove(entity);
+            if (entities.ContainsKey(group))
+            {
+                entities[group].Remove(entity);
+            }
         }
     }
 }
