@@ -100,6 +100,11 @@ namespace Space
                 region?.DecrementSize();
                 chunk.regionTiles[chunkTileX, chunkTileY] = null;
 
+                if (region?.size == 0)
+                {
+                    chunk.regions.Remove(region);
+                }
+
                 if (IsChunkTileOnEdge(chunkTileX, chunkTileY))
                 {
                     region?.ResetLinks(linkCache);
