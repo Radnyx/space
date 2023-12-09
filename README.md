@@ -21,5 +21,3 @@ Here's proof that we can have our cake and eat it too.
 ## Reachability detection
 
 ## Spatial storage
-
-_TODO_
