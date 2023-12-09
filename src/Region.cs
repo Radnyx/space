@@ -62,37 +62,30 @@ namespace Space
         {
             room.size -= size;
 
-            foreach (var (group, set) in entities)
-            {
-                foreach (var entity in set)
-                {
-                    ((Room<K>)room).RemoveEntity(group, entity);
-                }
-            }
+            RemoveEntitiesFromRoom();
         }
 
         public void ReplaceRoom(IRoom newRoom)
         {
             Destroy();
+
             room = newRoom;
             room.size += size;
 
-            foreach (var (group, set) in entities)
-            {
-                foreach (var entity in set)
-                {
-                    ((Room<K>)room).AddEntity(group, entity);
-                }
-            }
+            AddEntitiesToRoom();
         }
 
         public void ResetRoom()
         {
+            RemoveEntitiesFromRoom();
+
             var oldSize = size;
             room.size -= size;
             size = 0;
             room = new Room<K>();
             AddSize(oldSize);
+
+            AddEntitiesToRoom();
         }
 
         public void AddEntity(K group, IEntity<K> entity)
@@ -124,6 +117,28 @@ namespace Space
         public override string ToString()
         {
             return $"Region(room id={room.id}, size={size}, chunkX={chunkX}, chunkY={chunkY})";
+        }
+
+        private void AddEntitiesToRoom()
+        {
+            foreach (var (group, set) in entities)
+            {
+                foreach (var entity in set)
+                {
+                    ((Room<K>)room).AddEntity(group, entity);
+                }
+            }
+        }
+
+        private void RemoveEntitiesFromRoom()
+        {
+            foreach (var (group, set) in entities)
+            {
+                foreach (var entity in set)
+                {
+                    ((Room<K>)room).RemoveEntity(group, entity);
+                }
+            }
         }
     }
 }
