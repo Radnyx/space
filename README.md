@@ -12,8 +12,6 @@ Compound that by the number of characters running around. And if we wish to alte
 This is an all-in-one solution to efficient pathfinding, reachability detection, and even spatially storing and querying for entities. It's mostly inspired by
 Tynan Sylvester's design for Rimworld (https://www.youtube.com/watch?v=RMBQn_sg7DA) though I've taken a lot of liberties.
 
-It's well tested and surprisingly pretty small.
-
 Here's proof that we can have our cake and eat it too.
 
 ## Efficient pathfinding
