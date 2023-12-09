@@ -13,5 +13,7 @@ namespace Space
         public IRegion? GetRegionAt(int tileX, int tileY);
 
         public IRegion GetOtherRegionFromLink(uint link, IRegion thisRegion);
+
+        public bool AreRegionsConnected(IRegion region1, IRegion region2);
     }
 }

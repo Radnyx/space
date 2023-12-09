@@ -60,6 +60,11 @@ namespace Space.Navigation
 
         private void LocalAStarSearch((int, int) startTile, (int, int) endTile)
         {
+            if (IsDisconnected(startTile, endTile))
+            {
+                return;
+            }
+
             int startChunkX = startTile.Item1 / chunkGrid.chunkSizeX;
             int startChunkY = startTile.Item2 / chunkGrid.chunkSizeY;
             int endChunkX = endTile.Item1 / chunkGrid.chunkSizeX;
@@ -136,6 +141,17 @@ namespace Space.Navigation
                 var fromTile = cameFrom[current];
                 current = fromTile;
             }
+        }
+
+        private bool IsDisconnected((int, int) startTile, (int, int) endTile)
+        {
+            var region1 = chunkGrid.GetRegionAt(startTile.Item1, startTile.Item2);
+            var region2 = chunkGrid.GetRegionAt(endTile.Item1, endTile.Item2);
+            return (
+                region1 == null ||
+                region2 == null ||
+                (region1 != region2 && !chunkGrid.AreRegionsConnected(region1, region2))
+            );
         }
 
         private class TileNode : FastPriorityQueueNode

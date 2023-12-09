@@ -425,6 +425,19 @@ namespace Space
             return null;
         }
 
+        public bool AreRegionsConnected(IRegion region1, IRegion region2)
+        {
+            foreach (var link in region1.links)
+            {
+                var other = linkCache[link].GetOtherRegion(region1);
+                if (other == region2)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private void RecalculateLinksForChunk(int x, int y)
         {
             var currentChunk = chunks[x, y];
