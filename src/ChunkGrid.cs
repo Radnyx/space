@@ -397,23 +397,23 @@ namespace Space
             int iterations = 0;
             while (queue.Count > 0 && iterations < FIND_ENTITIES_MAX_ITERATIONS)
             {
-                var r = queue.Dequeue();
+                Region<K> r = (Region<K>)queue.Dequeue();
+
+                if (r.entities.ContainsKey(group))
+                {
+                    var entities = r.entities[group];
+                    if (entities.Count > 0)
+                    {
+                        return entities;
+                    }
+                }
 
                 foreach (var link in r.links)
                 {
                     var linkPair = linkCache[link];
-                    Region<K> otherRegion = (Region<K>)linkPair.GetOtherRegion(r);
+                    var otherRegion = linkPair.GetOtherRegion(r);
 
                     if (seen.Contains(otherRegion)) continue;
-
-                    if (otherRegion.entities.ContainsKey(group))
-                    {
-                        var entities = otherRegion.entities[group];
-                        if (entities.Count > 0)
-                        {
-                            return entities;
-                        }
-                    }
 
                     queue.Enqueue(otherRegion);
                     seen.Add(otherRegion);
