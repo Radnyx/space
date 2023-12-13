@@ -577,28 +577,7 @@ namespace Space
             bool h = onBottomEdge || tileMap.IsOutOfBounds(x, y + 1);
             bool i = onRightEdge || onBottomEdge || tileMap.IsOutOfBounds(x + 1, y + 1);
 
-            /**
-                Horrifying eldritch computer generated expression to quickly check the surrounding tiles. 
-                I couldn't think of a simpler way that didn't involve loops. So I filtered the 256 possibilities 
-                to the 123 cases where this returns true, built a giant boolean expression, and simplified it.
-            */
-            return
-                (a && !b && c && !h) ||
-                (a && !b && !d && f) ||
-                (a && !b && !d && h) ||
-                (a && !d && g && !h) ||
-                (a && !f && !h && i) ||
-                (b && !d && !f && h) ||
-                (b && !d && g && !h) ||
-                (b && !f && !h && i) ||
-                (!b && c && d && !f) ||
-                (!b && c && !f && h) ||
-                (!b && c && g && !h) ||
-                (!b && d && f && !h) ||
-                (c && !f && !h && i) ||
-                (d && !f && !h && i) ||
-                (!d && f && g && !h) ||
-                (!f && g && !h && i);
+            return Utils.Partitions3by3Area(a, b, c, d, f, g, h, i);
         }
 
         private static int RoomSize(IRegion r) => r.room.size;
